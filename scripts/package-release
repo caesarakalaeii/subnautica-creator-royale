@@ -38,7 +38,7 @@ SERVER_FILES = ("Lms.Server.dll", "Lms.Core.dll", "YamlDotNet.dll")
 CLIENT_FILES = ("Lms.Game.dll", "Lms.Core.dll", "YamlDotNet.dll", "NitroxPatcher.dll", "lms-minimap.png")
 
 # In-game survey output and the cell-timing diagnostic switch: local to a dev machine.
-JUNK = {"lms-atmosphere-biomes.tsv", "lms-biome-sightings.tsv", "lms-cell-timing"}
+JUNK = {"lms-atmosphere-biomes.tsv", "lms-biome-sightings.tsv", "lms-pod-prefabs.tsv", "lms-cell-timing"}
 
 
 def is_junk(name: str) -> bool:
