@@ -49,12 +49,15 @@ func SeatFinal(pushed telemetry.Standings, groups []Group, final []FinalSeries, 
 		finished := map[played]bool{}
 		finishedGroups := map[int]bool{}
 		byName := map[string]*standing{}
+		// Keyed like the table, so a kill credited in another case counts for the player; the games
+		// come first, so the name shown is the one the game reported.
 		entry := func(name string) *standing {
-			if byName[name] == nil {
-				byName[name] = &standing{name: name}
+			key := fold(name)
+			if byName[key] == nil {
+				byName[key] = &standing{name: name}
 			}
 
-			return byName[name]
+			return byName[key]
 		}
 
 		for _, game := range pushed.Games {
@@ -110,11 +113,12 @@ func SeatFinal(pushed telemetry.Standings, groups []Group, final []FinalSeries, 
 				break
 			}
 
-			if seated[row.name] {
+			key := fold(row.name)
+			if seated[key] {
 				continue
 			}
 
-			seated[row.name] = true
+			seated[key] = true
 			seats = append(seats, FinalSeat{Name: row.name, Series: spec.Series})
 			taken++
 		}

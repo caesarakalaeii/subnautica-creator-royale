@@ -6,6 +6,8 @@
 package tournament
 
 import (
+	"maps"
+	"slices"
 	"sort"
 	"time"
 
@@ -140,44 +142,48 @@ func Fold(pushed telemetry.Standings, credits, adjusted map[string]int) Table {
 		Entries:       make([]Line, 0, len(pushed.Entries)+len(credits)),
 	}
 
+	// Keyed the way the roster compares names, so a credit typed as "DSpear" lands on the "Dspear"
+	// the game reported.
+	shown := map[string]string{}
+	kills := keyed(credits, shown)
+	points := keyed(adjusted, shown)
+
 	seen := map[string]bool{}
 	for _, row := range pushed.Entries {
-		seen[row.Name] = true
-		attributed := credits[row.Name]
+		key := fold(row.Name)
+		seen[key] = true
+		attributed := kills[key]
 
 		table.Entries = append(table.Entries, Line{
 			Name:          row.Name,
-			Points:        row.Points + attributed*pushed.PointsPerKill + adjusted[row.Name],
+			Points:        row.Points + attributed*pushed.PointsPerKill + points[key],
 			Played:        row.Played,
 			Wins:          row.Wins,
 			BestPlacement: row.BestPlacement,
 			Kills:         row.Kills,
 			Attributed:    attributed,
 			Outlasted:     row.Outlasted,
-			Adjusted:      adjusted[row.Name],
+			Adjusted:      points[key],
 		})
 	}
 
 	// Players credited or adjusted who are not in the mod's table yet, since it only counts finished
 	// matches.
-	newcomers := make([]string, 0, len(credits))
-	for _, named := range []map[string]int{credits, adjusted} {
-		for name := range named {
-			if !seen[name] {
-				seen[name] = true
-				newcomers = append(newcomers, name)
-			}
+	newcomers := make([]string, 0, len(shown))
+	for key := range shown {
+		if !seen[key] {
+			newcomers = append(newcomers, key)
 		}
 	}
 
 	// Sorted for a deterministic order.
-	sort.Strings(newcomers)
-	for _, name := range newcomers {
+	sort.Slice(newcomers, func(i, j int) bool { return shown[newcomers[i]] < shown[newcomers[j]] })
+	for _, key := range newcomers {
 		table.Entries = append(table.Entries, Line{
-			Name:       name,
-			Points:     credits[name]*pushed.PointsPerKill + adjusted[name],
-			Attributed: credits[name],
-			Adjusted:   adjusted[name],
+			Name:       shown[key],
+			Points:     kills[key]*pushed.PointsPerKill + points[key],
+			Attributed: kills[key],
+			Adjusted:   points[key],
 		})
 	}
 
@@ -188,6 +194,22 @@ func Fold(pushed telemetry.Standings, credits, adjusted map[string]int) Table {
 	place(table.Entries)
 
 	return table
+}
+
+// keyed sums named counts under the roster's key for each name, and remembers in shown the first
+// spelling of each in name order, so a player nobody pushed yet reads the same on every request.
+func keyed(named map[string]int, shown map[string]string) map[string]int {
+	sums := make(map[string]int, len(named))
+	for _, name := range slices.Sorted(maps.Keys(named)) {
+		key := fold(name)
+		sums[key] += named[name]
+
+		if _, ok := shown[key]; !ok {
+			shown[key] = name
+		}
+	}
+
+	return sums
 }
 
 // place numbers the table, sharing a place between rows tied on points, wins and best result, as the

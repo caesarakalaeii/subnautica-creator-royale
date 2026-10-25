@@ -144,3 +144,19 @@ func TestAnAdjustmentInASeriesGameCanMoveASeat(t *testing.T) {
 		t.Errorf("final = %v, want Bea on 2 + 2 ahead of Ada on 3", got)
 	}
 }
+
+// The series total reads names the way the table does, so a kill credited as "BEA" counts for the
+// "Bea" who played.
+func TestAKillCreditedInAnotherCaseCountsForThePlayer(t *testing.T) {
+	standings := telemetry.Standings{PointsPerKill: 2, Games: []telemetry.GameResult{
+		game(14, scored("Ada", 3, 1), scored("Bea", 2, 2), scored("Cy", 1, 3)),
+	}}
+
+	final := []FinalSeries{{Series: "winners semi 1", Seats: 1}}
+	rows := []Attribution{attributed(14, 1, "Cy", "BEA")}
+	adjustments := []Adjustment{{Group: 14, Name: "bea", Points: 1}}
+
+	if got := names(SeatFinal(standings, eventGroups(), final, rows, adjustments)); !slices.Equal(got, []string{"Bea"}) {
+		t.Errorf("final = %v, want Bea on 2 + 2 + 1, under the name the game reported", got)
+	}
+}

@@ -213,3 +213,33 @@ func TestAnAdjustmentCanReorderTheTable(t *testing.T) {
 		t.Errorf("leader = %+v, want Rook on 6", table.Entries[0])
 	}
 }
+
+// A credit typed with another capitalisation than the game reports is the same player, the way the
+// roster already reads names.
+func TestACreditInAnotherCaseLandsOnThePushedRow(t *testing.T) {
+	table := Fold(pushed(line(1, "Dspear", 12, 4, 1, 12)), map[string]int{"DSpear": 3}, nil)
+
+	if len(table.Entries) != 1 {
+		t.Fatalf("entries = %v, want the one Dspear row", table.Entries)
+	}
+
+	if row := table.Entries[0]; row.Name != "Dspear" || row.Points != 18 || row.Attributed != 3 {
+		t.Errorf("row = %+v, want Dspear on 12 + 3 kills at 2", row)
+	}
+}
+
+func TestAnAdjustmentInAnotherCaseLandsOnThePushedRow(t *testing.T) {
+	table := Fold(pushed(line(1, "Dspear", 12, 4, 1, 12)), nil, map[string]int{"dspear": 1})
+
+	if len(table.Entries) != 1 || table.Entries[0].Points != 13 {
+		t.Errorf("entries = %v, want the one Dspear row on 13", table.Entries)
+	}
+}
+
+func TestNewcomersInTwoCasesAreOneRow(t *testing.T) {
+	table := Fold(pushed(), map[string]int{"DSpear": 1}, map[string]int{"Dspear": 1})
+
+	if len(table.Entries) != 1 || table.Entries[0].Points != 3 {
+		t.Errorf("entries = %v, want one row on a kill at 2 and a point", table.Entries)
+	}
+}

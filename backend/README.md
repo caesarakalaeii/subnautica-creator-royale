@@ -104,8 +104,8 @@ not visible" off.
 | `GET /live` | view | WebSocket feed. `?after=<seq>` resumes from a cursor. Closes with `1013` at `LMS_MAX_LIVE_CLIENTS`; idle connections are pinged every 30 s |
 | `GET /camera?control=<channel>` | view / operator | WebSocket for a caster-driven map camera. Followers use the view token; the driver offers subprotocol `lms.camera.operator` plus the operator token. A second driver is closed with `1013` |
 | `GET /bracket` | view, or none if published | standings, groups, the final's seats and the attribution count. Also `HEAD` |
-| `POST /attributions` | operator | record who killed whom. Append-only; the latest correction wins |
-| `POST /adjustments` | operator | give or take points (±100) for a player in a group, with a reason |
+| `POST /attributions` | operator | record who killed whom. Append-only; the latest correction wins. Names match ignoring case |
+| `POST /adjustments` | operator | give or take points (±100) for a player in a group, with a reason. Names match ignoring case |
 | `PUT /groups` | operator | replace the bracket: `{"groups":[{number,name,series,members}],"final":[{series,seats}]}` |
 | `POST /commands` | operator | queue an `lms` command for the game server |
 | `POST /console` | ingest | the game server's report: who is connected, its command vocabulary, command results, the config it is running |
