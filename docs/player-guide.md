@@ -57,7 +57,9 @@ Commands go into the Nitrox chat. Log in as admin first with `/login <password>`
 | `/lms follow <player>`, `/lms unfollow` | point every caster camera at one player |
 
 `/lms round` refuses rather than half-runs: outside the lobby, or with the wrong group size, it
-names the problem and changes nothing. The same commands are buttons in Options → Nitrox, under
+names the problem and changes nothing. A second `/lms round` while one is armed is refused too,
+`force` included: seating everybody twice freezes their air, food and water. `/lms reset` first to
+seat them again. The same commands are buttons in Options → Nitrox, under
 the tournament's match-control heading.
 
 ## How a match plays

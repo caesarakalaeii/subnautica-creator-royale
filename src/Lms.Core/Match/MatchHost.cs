@@ -625,6 +625,17 @@ namespace Lms.Core.Match
                 return "there is no server here to do it, so round did nothing.";
             }
 
+            // Seating is a teleport, and the game freezes a player's stats per teleport but thaws them
+            // once however many overlapped, so a group seated twice never loses air, food or water.
+            // Force does not override it, since the freeze has nothing to do with the count.
+            if (StartsAt.HasValue)
+            {
+                double left = Math.Max(0, (StartsAt.Value - worldNow).TotalSeconds);
+                return Readable.Line(
+                    $"a round is already armed and starts in {left:0.#}s, so it was not prepared again: ",
+                    $"seating everybody twice freezes their air, food and water. `lms reset` first to seat them again.");
+            }
+
             RoundPlan plan = RoundPreparation.Plan(director.State, Connected(), Ghosts,
                 config.Spawn.GroupSize, forced, Ready);
 

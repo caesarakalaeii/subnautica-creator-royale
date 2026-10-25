@@ -445,8 +445,8 @@ verb lists the valid ones, and a refused command explains why and shows the stat
 | `/lms skip` | Start the next phase now and restart the cadence from this moment. No warning. |
 | `/lms reset` | Replay this group from the lobby: no phases fired, opening sphere restored. |
 | `/lms next` (`nextgroup`) | Move to the next group with a fresh match. |
-| `/lms round` | Prepare and start a round: put contestants in survival mode, seat them on a fresh pod layout, remove derelict pods, clear inventories to `start.kit`, grant blueprints, then start the match after `start.hold`. Refuses outside the lobby, or when the group is not `spawn.groupSize` (it names who it counted). |
-| `/lms round force` | `round` without the head-count check. |
+| `/lms round` | Prepare and start a round: put contestants in survival mode, seat them on a fresh pod layout, remove derelict pods, clear inventories to `start.kit`, grant blueprints, then start the match after `start.hold`. Refuses outside the lobby, while a round is already armed (`/lms reset` first), or when the group is not `spawn.groupSize` (it names who it counted). |
+| `/lms round force` | `round` without the head-count check. Still refused while a round is armed. |
 | `/lms podspawn` (`pods`) | Seat everybody present on the pods the layout wants, reusing existing pods. Does not touch the clock. Players beyond `spawn.groupSize` stay where they are. Logs `PodsPlaced`. |
 | `/lms podclear` | Remove pods the layout does not use, that nobody is assigned to and that nobody is within 10 m of. Logs `PodsCleared` with the number of stowed items lost. |
 | `/lms podclear all` | Remove every escape pod in the world. Refuses, removing nothing, while anybody is in a pod. |

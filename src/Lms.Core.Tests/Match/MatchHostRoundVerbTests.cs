@@ -454,6 +454,48 @@ start:
         prepared.Host.IsLive.Should().BeTrue("the hold ran out while nobody was looking");
     }
 
+    /// <remarks>
+    /// Each seating is a teleport, and the game freezes a player's stats per teleport but releases
+    /// them once for any number of them, so a group seated twice never loses air, food or water.
+    /// </remarks>
+    [TestMethod]
+    public void A_second_round_during_the_hold_is_refused_and_never_reaches_the_world()
+    {
+        Prepared prepared = Ready();
+        prepared.Host.Command("round", Noon);
+
+        string answer = prepared.Host.Command("round", Noon + TimeSpan.FromMilliseconds(235));
+
+        answer.Should().Contain("already armed");
+        prepared.Runs.Should().Be(1, "a second seating freezes everybody's vitals");
+        prepared.Host.Audit.Records.Count(record => record.Kind == AuditRecordKind.RoundPrepared)
+            .Should().Be(1);
+        prepared.Host.StartsAt.Should().Be(Noon + Hold, "the first round's start stands");
+    }
+
+    [TestMethod]
+    public void Force_does_not_override_the_hold_either()
+    {
+        Prepared prepared = Ready();
+        prepared.Host.Command("round", Noon);
+
+        prepared.Host.Command("round force", Noon + TimeSpan.FromSeconds(1));
+
+        prepared.Runs.Should().Be(1);
+    }
+
+    [TestMethod]
+    public void A_round_after_a_reset_during_the_hold_prepares_again()
+    {
+        Prepared prepared = Ready();
+        prepared.Host.Command("round", Noon);
+        prepared.Host.Command("reset", Noon + TimeSpan.FromSeconds(5));
+
+        prepared.Host.Command("round", Noon + TimeSpan.FromSeconds(10));
+
+        prepared.Runs.Should().Be(2);
+    }
+
     [TestMethod]
     public void A_host_with_no_server_behind_it_answers_the_verb_rather_than_throwing()
     {
