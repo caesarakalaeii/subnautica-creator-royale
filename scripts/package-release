@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Builds the downloadable release zip: a Windows Nitrox launcher with the mod inside it, and a
+Linux server with the mod's server half.
+
+  * the launcher, server and .NET runtime are a self-contained win-x64 publish;
+  * lib/net472 (NitroxPatcher, NitroxClient, the client half of the mod) comes from the local
+    build, because the publish does not populate it;
+  * lib/ beside the launcher gets the server half of the mod;
+  * server-linux-x64/ is a self-contained Linux publish of the server alone.
+
+Run `nix develop -c ./scripts/install-mod` first: this packages what that built. It needs a
+Subnautica install, so releases are built locally rather than in CI.
+
+    ./scripts/package-release v1.0.0
+    gh release create v1.0.0 dist/subnautica-creator-royale-v1.0.0.zip
+"""
+from __future__ import annotations
+
+import argparse
+import shutil
+import subprocess
+import sys
+import zipfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY = "https://github.com/caesarakalaeii/subnautica-creator-royale"
+BUILT_SERVER_LIB = ROOT / "nitrox/Nitrox.Launcher/bin/Release/net9.0/lib"
+BUILT_LIB = BUILT_SERVER_LIB / "net472"
+LAUNCHER_PROJECT = ROOT / "nitrox/Nitrox.Launcher/Nitrox.Launcher.csproj"
+SERVER_PROJECT = ROOT / "nitrox/Nitrox.Server.Subnautica/Nitrox.Server.Subnautica.csproj"
+SHIPPED_CONFIG = ROOT / "docs/config/tournament.playtest.yaml"
+CONFIG_NAME = "lms-tournament.yaml"
+LINUX_SERVER_DIR = "server-linux-x64"
+
+# The server half is loaded by name with no deps.json, so its dependencies ship beside it.
+SERVER_FILES = ("Lms.Server.dll", "Lms.Core.dll", "YamlDotNet.dll")
+CLIENT_FILES = ("Lms.Game.dll", "Lms.Core.dll", "YamlDotNet.dll", "NitroxPatcher.dll", "lms-minimap.png")
+
+# In-game survey output and the cell-timing diagnostic switch: local to a dev machine.
+JUNK = {"lms-atmosphere-biomes.tsv", "lms-biome-sightings.tsv", "lms-cell-timing"}
+
+
+def is_junk(name: str) -> bool:
+    """Whether a file beside the mod stays out of the zip. Config backups match by prefix."""
+    return name in JUNK or (name.startswith(CONFIG_NAME) and name != CONFIG_NAME)
+
+
+def publish(project: Path, runtime: str, into: Path) -> None:
+    print(f"==> publish {project.stem}: {runtime}, self-contained")
+    subprocess.run(["dotnet", "publish", str(project), "-c", "Release", "-r", runtime,
+                    "--self-contained", "true", "-o", str(into)], check=True, cwd=ROOT)
+
+
+def copy_required(names: tuple[str, ...], source: Path, target: Path) -> None:
+    target.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        if not (source / name).exists():
+            sys.exit(f"{name} is missing from {source} -- run ./scripts/install-mod first")
+        shutil.copy2(source / name, target / name)
+
+
+def overlay_the_mod(stage: Path) -> None:
+    print("==> overlay: client half into lib/net472, server half into lib/")
+    target = stage / "lib/net472"
+    target.mkdir(parents=True, exist_ok=True)
+    for item in sorted(BUILT_LIB.iterdir()):
+        if item.is_file() and not is_junk(item.name):
+            shutil.copy2(item, target / item.name)
+    copy_required(CLIENT_FILES, BUILT_LIB, target)
+    copy_required(SERVER_FILES, BUILT_SERVER_LIB, stage / "lib")
+
+    # The client reads its copy from lib/net472, the server the one beside its executable.
+    shutil.copy2(SHIPPED_CONFIG, target / CONFIG_NAME)
+    shutil.copy2(SHIPPED_CONFIG, stage / CONFIG_NAME)
+
+    linux = stage / LINUX_SERVER_DIR
+    copy_required(SERVER_FILES, BUILT_SERVER_LIB, linux / "lib")
+    shutil.copy2(SHIPPED_CONFIG, linux / CONFIG_NAME)
+
+
+def add_the_paperwork(stage: Path) -> None:
+    print("==> paperwork: guide, configs, licence")
+    shutil.copy2(ROOT / "docs/player-guide.md", stage / "README.md")
+    shutil.copy2(ROOT / "LICENSE", stage / "LICENSE")
+    configs = stage / "config"
+    configs.mkdir(exist_ok=True)
+    for config in ("tournament.playtest.yaml", "tournament.example.yaml"):
+        shutil.copy2(ROOT / "docs/config" / config, configs / config)
+
+
+def stamp(stage: Path, version: str, commit: str) -> None:
+    """Writes BUILD.txt: what this zip is and where its exact source lives (GPL-3.0 §6)."""
+    (stage / "BUILD.txt").write_text(
+        f"Subnautica Creator Royale {version}\n"
+        f"commit  {commit}\n"
+        f"source  {REPOSITORY}/tree/{commit}\n", encoding="utf-8")
+
+
+def zip_up(stage: Path, archive: Path) -> None:
+    print(f"==> zip: {archive}")
+    archive.unlink(missing_ok=True)
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zipped:
+        for path in sorted(stage.rglob("*")):
+            if path.is_file():
+                zipped.write(path, Path(stage.name) / path.relative_to(stage))
+
+
+def git(*args: str) -> str:
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("version", help="release version, e.g. v1.0.0")
+    parser.add_argument("--out", default=str(ROOT / "dist"), help="where to write the zip")
+    args = parser.parse_args()
+
+    if git("status", "--porcelain", "--untracked-files=no"):
+        sys.exit("tracked files have uncommitted changes; a release must match a commit")
+    if not BUILT_LIB.exists():
+        sys.exit(f"{BUILT_LIB} does not exist -- run ./scripts/install-mod first")
+
+    name = f"subnautica-creator-royale-{args.version}"
+    stage = Path(args.out) / name
+    shutil.rmtree(stage, ignore_errors=True)
+
+    publish(LAUNCHER_PROJECT, "win-x64", stage)
+    publish(SERVER_PROJECT, "linux-x64", stage / LINUX_SERVER_DIR)
+    overlay_the_mod(stage)
+    add_the_paperwork(stage)
+    stamp(stage, args.version, git("rev-parse", "HEAD"))
+
+    archive = Path(args.out) / f"{name}.zip"
+    zip_up(stage, archive)
+    print(f"{archive} -- {archive.stat().st_size / 2**20:.0f} MB")
+
+
+if __name__ == "__main__":
+    main()

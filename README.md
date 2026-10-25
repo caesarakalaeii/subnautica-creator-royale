@@ -42,6 +42,13 @@ goes with it. Built for the Subnautica Creator Royale, a 25-creator event played
   and sends commands, and self-service **booths** so anyone running their own server can get a
   dashboard for a day.
 
+## Download
+
+Grab the latest zip from [Releases](https://github.com/caesarakalaeii/subnautica-creator-royale/releases/latest):
+a self-contained Windows Nitrox launcher with the mod already inside, plus a Linux server. Unzip,
+run `Nitrox.Launcher.exe`, and follow the [player guide](docs/player-guide.md). Requires
+Subnautica on Steam.
+
 ## Repository layout
 
 ```
@@ -52,6 +59,7 @@ src/Lms.Server/       server half, loaded by the Nitrox server (net9.0)
 nitrox-fork/          the patch applied to Nitrox 1.8.1.0
 backend/              Go caster service with its embedded web front-end
 docs/config/          tournament config reference and example configs
+docs/player-guide.md  installing and playing the release
 docs/telemetry/       the game-to-website telemetry contract
 docs/data/            biome tables, minimap and heightmap derived from the game
 scripts/              build, install and map tools
@@ -81,6 +89,9 @@ The game side needs a Subnautica install (found in the default Steam location, o
 
 Start the game from the Nitrox launcher. `Lms.Game` and `Lms.Server` are not part of `Lms.slnx` or
 CI because they compile against the game's assemblies and the patched Nitrox build.
+
+`./scripts/package-release v1.2.3` builds the release zip from that build into `dist/`. Releases
+are built locally because the client half compiles against the game's own assemblies.
 
 Map data tools (need the game install): `./scripts/make-minimap`, `./scripts/make-heightmap`,
 `cd backend && go run ./cmd/worldmesh`, and `./scripts/check-zone` to check that a config's zone
