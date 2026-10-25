@@ -1,0 +1,15 @@
+#lms-audit 1
+1	2026-08-25T16:41:17.964Z	0	1	1	PlayerJoined	player=Fenris	pos=0,0,0	health=80
+2	2026-08-25T16:42:48.666Z	0	1	1	MatchStarted
+3	2026-08-25T16:43:33.962Z	45000	1	1	PhaseWarned	phase=1
+4	2026-08-25T16:43:48.961Z	60000	1	1	PhaseStarted	phase=1
+5	2026-08-25T16:44:33.961Z	105000	1	1	PhaseWarned	phase=2
+6	2026-08-25T16:44:48.961Z	120000	1	1	PhaseStarted	phase=2
+7	2026-08-25T16:45:33.961Z	165000	1	1	PhaseWarned	phase=3
+8	2026-08-25T16:45:48.960Z	180000	1	1	PhaseStarted	phase=3
+9	2026-08-25T16:46:03.961Z	195297	1	1	PlayerEliminated	player=Fenris	pos=343.507,0.623,545.9	biome=kelpForest	health=2
+10	2026-08-25T16:46:33.961Z	225000	1	1	PhaseWarned	phase=4
+11	2026-08-25T16:46:48.961Z	240000	1	1	PhaseStarted	phase=4
+12	2026-08-25T16:47:08.961Z	260297	1	1	ZoneClosed
+13	2026-08-25T16:47:08.961Z	260297	1	1	MatchEnded
+14	2026-08-25T16:57:00.443Z	0	1	2	MatchReset

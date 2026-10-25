@@ -1,0 +1,14 @@
+<!-- Copy to local.props (gitignored) if your paths are not the defaults.
+
+     SubnauticaDir  the game install. Defaults to the Steam path for your OS, and the
+                    SUBNAUTICA_INSTALLATION_PATH environment variable overrides it (Nitrox's
+                    build honours the same variable).
+     NitroxDir      the Nitrox fork checkout. Defaults to ./nitrox, which is where
+                    ./scripts/nitrox-fork puts it.
+-->
+<Project>
+  <PropertyGroup>
+    <SubnauticaDir>/home/you/.local/share/Steam/steamapps/common/Subnautica</SubnauticaDir>
+    <NitroxDir>/home/you/git/Nitrox/</NitroxDir>
+  </PropertyGroup>
+</Project>

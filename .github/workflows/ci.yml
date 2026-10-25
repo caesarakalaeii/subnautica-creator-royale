@@ -1,0 +1,47 @@
+name: CI
+
+# Lms.Game and Lms.Server are not built here: they compile against a local Subnautica install and
+# the patched Nitrox build, which a runner does not have.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: Lms.Core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet test --configuration Release
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: go vet ./... && go test -race ./...
+        working-directory: backend
+      - run: node --test backend/internal/web/tests/*.test.js
+
+  scripts:
+    name: Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml
+      - run: python3 -m unittest discover --start-directory scripts/tests
+      - run: ./scripts/check-zone --self-test

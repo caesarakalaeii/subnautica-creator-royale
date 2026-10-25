@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>LMS caster · booth</title>
+    <link rel="stylesheet" href="/style.css" />
+    <!-- Maps the bare "three" specifier so the vendored OrbitControls works unmodified, with no
+         build step. -->
+    <script type="importmap">
+      { "imports": { "three": "/vendor/three.module.min.js" } }
+    </script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="view">
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- The header deck: alive count, clock, phase and countdown, with the match state and
+         connection badges on the right. -->
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__title">last man standing</span>
+        <span class="bar__sub" data-field="group">—</span>
+      </div>
+
+      <div class="readout readout--hero">
+        <span class="readout__label">alive</span>
+        <span class="readout__value" data-field="alive">—</span>
+      </div>
+
+      <div class="readout readout--clock">
+        <span class="readout__label">elapsed</span>
+        <span class="readout__value" data-field="elapsed">—</span>
+      </div>
+
+      <div class="readout">
+        <span class="readout__label">phase</span>
+        <span class="readout__value" data-field="phase">—</span>
+      </div>
+
+      <div class="readout">
+        <span class="readout__label">next in</span>
+        <span class="readout__value" data-field="untilNext">—</span>
+      </div>
+
+      <div class="bar__right">
+        <div class="readout readout--state">
+          <span class="readout__label">match</span>
+          <span class="readout__value" data-field="state">no match</span>
+        </div>
+
+        <div class="link" data-field="link" role="status" aria-live="polite">
+          <span class="link__dot" aria-hidden="true"></span>
+          <span class="link__text">starting</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page tabs. Relative hrefs keep navigation inside the current booth (`/b/{booth}/`); every
+         page reads the same booth-scoped view token from browser storage. -->
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html">home</a>
+      <a class="tabs__tab" href="tournament.html">tournament</a>
+      <a class="tabs__tab" href="index.html" aria-current="page">view</a>
+      <a class="tabs__tab" href="bracket.html">bracket</a>
+      <a class="tabs__tab" href="console.html">operator</a>
+      <a class="tabs__tab" href="events.html">events</a>
+    </nav>
+
+    <div class="phasebar" aria-hidden="true"><span data-field="phaseFill"></span></div>
+
+    <section class="zone" aria-label="the zone">
+      <div class="zone__cell">
+        <span class="zone__label" title="where the wall stands this phase, and how wide">wall now</span>
+        <span class="zone__value" data-field="zoneNow">—</span>
+      </div>
+      <div class="zone__cell">
+        <span class="zone__label" title="the sphere this wall closes to next phase">closing to</span>
+        <span class="zone__value" data-field="zoneNext">—</span>
+      </div>
+      <div class="zone__cell">
+        <span class="zone__label" title="damage every zone tick does outside the wall">bite</span>
+        <span class="zone__value" data-field="damage">—</span>
+      </div>
+      <div class="zone__cell zone__cell--right">
+        <span class="zone__label" title="living players caught outside the wall right now">outside</span>
+        <span class="zone__value" data-field="outside">—</span>
+      </div>
+    </section>
+
+    <main>
+      <section class="pane pane--roster" aria-label="the players">
+      <table class="roster">
+        <caption class="sr">Every player in the match, the living first</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="col-name">player</th>
+            <th scope="col" class="col-meter">health</th>
+            <th scope="col" class="col-num">o&#8322;</th>
+            <th scope="col" class="col-meter">food</th>
+            <th scope="col" class="col-meter">water</th>
+            <th scope="col" class="col-num">depth</th>
+            <th scope="col" class="col-pos">x&nbsp;/&nbsp;z</th>
+            <th scope="col" class="col-biome">biome</th>
+            <th scope="col" class="col-vehicle">vehicle</th>
+            <th scope="col" class="col-suit">suit</th>
+            <th scope="col" class="col-held">held</th>
+            <th scope="col" class="col-rifle">rifle</th>
+            <th scope="col" class="col-zone">zone</th>
+            <th scope="col" class="col-pack">pack</th>
+          </tr>
+        </thead>
+        <tbody data-field="roster"></tbody>
+      </table>
+
+      <p class="empty" data-field="empty" hidden>
+        Connected, and nobody has reported yet. A row appears when the server's push first carries
+        a player.
+      </p>
+      </section>
+
+      <!-- A grid item of <main> in both layouts, so resizing the map only changes its placement and
+           the canvases are never rebuilt. -->
+      <section class="map" aria-label="where everybody is" data-field="mapPanel" data-view="flat">
+        <canvas data-field="mapCanvas"></canvas>
+        <canvas data-field="mapCanvas3d"></canvas>
+        <span class="map__north">N</span>
+        <span class="map__scale">4096 m</span>
+
+        <div class="map__controls">
+          <button class="map__button" type="button" data-field="mapSize" aria-pressed="false" title="swap the map with the roster">
+            big
+          </button>
+          <button class="map__button" type="button" data-field="mapToggle" aria-pressed="false" title="the solid map, with the terrain and the depth cut">
+            3D
+          </button>
+        </div>
+
+        <!-- The depth cut: removes terrain above a chosen depth to reveal caves. Solid view only. -->
+        <div class="map__cut" data-field="mapCut">
+          <label class="map__cut-name" for="mapcut" title="take the roof off the world down to this depth">cut</label>
+          <input
+            class="map__cut-slider"
+            id="mapcut"
+            type="range"
+            data-field="mapCutSlider"
+            min="0"
+            max="0"
+            step="4"
+            value="0"
+          />
+          <output class="map__cut-value" for="mapcut" data-field="mapCutValue">off</output>
+        </div>
+      </section>
+
+      <aside class="pane pane--side">
+      <!-- The tournament table, as computed by the mod; hidden until a match has finished. -->
+      <section class="table" aria-label="the tournament so far" data-field="table" hidden>
+        <header class="table__head">
+          <span class="table__title">tournament</span>
+          <span class="table__caption" data-field="tableCaption"></span>
+        </header>
+
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" class="table__place">#</th>
+              <th scope="col">player</th>
+              <th scope="col" class="table__num">played</th>
+              <th scope="col" class="table__num">w</th>
+              <th scope="col" class="table__num">k</th>
+              <th scope="col" class="table__num">pts</th>
+            </tr>
+          </thead>
+          <tbody data-field="tableRows"></tbody>
+        </table>
+      </section>
+
+      <div class="feed" aria-label="what has happened">
+        <header class="feed__head">
+          <span class="feed__title">feed</span>
+          <span class="feed__count" data-field="feedCount"></span>
+          <a class="feed__all" href="events.html">all events &rarr;</a>
+        </header>
+
+        <ol class="feed__list" data-field="feedList"></ol>
+
+        <p class="feed__empty" data-field="feedEmpty">
+          Nothing has happened yet. The match's own lifecycle, arrivals, departures and
+          eliminations land here as the server writes them.
+        </p>
+      </div>
+      </aside>
+    </main>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <dialog class="gate" data-field="gate">
+      <form method="dialog" data-field="gateForm">
+        <h1>the booth needs the view token</h1>
+        <p>
+          <code>/live</code> carries every player's live position, so it is behind its own secret
+          &mdash; not the push token. Paste <code>LMS_VIEW_TOKEN</code>. It is kept in this
+          browser, and never in the address bar.
+        </p>
+        <label class="sr" for="token">view token</label>
+        <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required />
+        <p class="gate__why" data-field="gateWhy"></p>
+        <button type="submit">watch</button>
+      </form>
+    </dialog>
+
+    <script type="module" src="/dashboard.js"></script>
+  </body>
+</html>

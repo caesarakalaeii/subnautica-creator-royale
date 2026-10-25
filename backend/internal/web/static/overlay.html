@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LMS overlay</title>
+    <link rel="stylesheet" href="/overlay.css" />
+    <!-- Maps the bare "three" specifier for the map panel's renderer and the vendored
+         OrbitControls, with no build step. Declared for every panel, since it must precede the
+         first module load. -->
+    <script type="importmap">
+      { "imports": { "three": "/vendor/three.module.min.js" } }
+    </script>
+    <!-- Inline, so a browser source never requests a missing favicon. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body data-panel="setup" data-showing="no">
+    <!-- The status strip: what a viewer needs to know at a glance, and nothing else. -->
+    <section class="strip" data-field="status">
+      <div class="strip__cell strip__cell--alive">
+        <span class="strip__label">alive</span>
+        <span class="strip__value" data-field="alive">—</span>
+      </div>
+      <div class="strip__cell">
+        <span class="strip__label">phase</span>
+        <span class="strip__value" data-field="phase">—</span>
+      </div>
+      <div class="strip__cell strip__cell--next">
+        <span class="strip__label">wall moves in</span>
+        <span class="strip__value" data-field="untilNext">—</span>
+      </div>
+      <div class="strip__rule"><span data-field="phaseFill"></span></div>
+    </section>
+
+    <!-- Elimination cards. Nothing is here until somebody goes out while the page is watching. -->
+    <ol class="toasts" data-field="toasts"></ol>
+
+    <!-- The board: who is where, and what the match is worth so far. -->
+    <section class="board" data-field="board">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" class="board__place">#</th>
+            <th scope="col">player</th>
+            <th scope="col" class="board__num">kills</th>
+            <th scope="col" class="board__num">pts</th>
+            <!-- Named rather than blank: `.sr` lives in the dashboard's stylesheet, not this one, so a
+                 screen-reader-only span would show on camera. -->
+            <th scope="col" class="board__cause">out</th>
+          </tr>
+        </thead>
+        <tbody data-field="boardRows"></tbody>
+      </table>
+    </section>
+
+    <!-- The tournament table, for between matches: shown whenever there is a table, match or not. -->
+    <section class="board board--table" data-field="table">
+      <p class="board__caption" data-field="tableCaption"></p>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" class="board__place">#</th>
+            <th scope="col">player</th>
+            <th scope="col" class="board__num">w</th>
+            <th scope="col" class="board__num">k</th>
+            <th scope="col" class="board__num">pts</th>
+          </tr>
+        </thead>
+        <tbody data-field="tableRows"></tbody>
+      </table>
+    </section>
+
+    <!-- The solid map as a full-frame shot: only the canvas, without the dashboard's map controls. -->
+    <section class="map" data-field="map">
+      <canvas data-field="mapCanvas"></canvas>
+    </section>
+
+    <!-- Shown when no valid panel was asked for (a misconfigured browser source), so the OBS
+         preview shows a card rather than a blank layer. -->
+    <section class="setup" data-field="setup">
+      <h1>LMS overlay</h1>
+      <p>
+        This page needs a <code>panel</code> in its address. Add one of these as a browser source,
+        with the view token on the end:
+      </p>
+      <ul data-field="setupUrls"></ul>
+      <p class="setup__link">
+        feed: <b data-field="setupLink">starting</b>
+      </p>
+
+      <!-- AGPL §13 source offer, substituted by the service with a link to the running revision.
+           Inside the setup card, so it is visible to someone opening the URL but never on camera. -->
+      <p class="setup__source"><!-- source-offer --></p>
+    </section>
+
+    <script type="module" src="/overlay-page.js"></script>
+  </body>
+</html>

@@ -1,0 +1,221 @@
+# 218 atmosphere prefabs: 150 resolved, 34 unresolved (PrecursorCave_CragField, FloatingIslandCaveTeleporter, FloatingIslandBelow, FloatingIsland, PrecursorCave_KooshZone, PrecursorCave_GhostTree, PrecursorCave_MushroomForest, PrecursorCache, Precursor_Gun_ControlRoom, Precursor_Gun_InnerRooms, Precursor_Gun_MoonPoolWater, Precursor_Gun_NoLoot, Precursor_Gun_OuterRooms, Precursor_LavaCastleBase, Precursor_LostRiverBase, CrashedShip_Interior_Entrance_03, CrashedShip_Interior_Cargo, CrashedShip_Interior_Dark, CrashedShip_Interior_Elevator, CrashedShip_Interior_Entrance_01_01, CrashedShip_Interior_Entrance_01_02, CrashedShip_Interior_Entrance_01_03, CrashedShip_Interior_Entrance_02_01, CrashedShip_Interior_Entrance_02_02, CrashedShip_Interior_Exo, CrashedShip_Interior_ExoPipes, CrashedShip_Interior_LivingArea, CrashedShip_Interior_Locker, CrashedShip_Interior_LockerCorridor, CrashedShip_Interior_Power, CrashedShip_Interior_PowerCorridor, CrashedShip_Interior_SeamothRoom, CrashedShip_Interior_THallway, CrashedShip_Interior_THallwayLower), 17 with no biome of their own, 14 without a volume, 0 that would not load
+# read by mod 1.0.0.0 core 1.0.0.0 at 2026-08-23T19:57:16.8966596Z
+prefabPath	classId	overrideBiome	resolved	kind	outcome
+WorldEntities/Atmosphere/ActiveLavazone/LavaFalls.prefab	150d0361-d9e8-4e2b-a930-6398992ba115	LavaFalls	activeLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/ActiveLavazone/LavaLakes.prefab	5975d3c5-381c-4f0c-a7f2-a27391d3f46f	LavaLakes	activeLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/ActiveLavazone/LavaLakes_LavaPool.prefab	1f9993c3-3025-4e8d-8805-4f0fc16adaff	LavaLakes_LavaPool	activeLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/ActiveLavazone/LavaPit.prefab	6ab67109-eea5-407d-81ec-e6e0ae7b76ef	LavaPit	activeLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/ActiveLavazone/Normal.prefab	afc2a9c3-6388-4258-9653-b2918c2315d5	ALZChamber	activeLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Bloodkelp_Wreck_Adjust.prefab	9a6c357c-1af7-43e9-9a15-e1098f005c7a	bloodKelp_wreck	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Cave(Sphere).prefab	673e9db2-62d7-4b49-a07e-0dc7ebe4203c	BloodKelp_Cave	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Cave.prefab	db7b6b56-8471-46b9-ba91-e42c91d2f517	BloodKelp_Cave	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/DeepTrench.prefab	3942e6d0-da7a-40a2-b429-297be4da700e	BloodKelp_DeepTrench	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Normal.prefab	5fff71b2-c8a2-4ed6-8d35-d0ff24ef376d	BloodKelp	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Surface.prefab	013ec2bf-4e86-45bd-b6a9-a59506f54099	BloodKelp	bloodKelp	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelp/Trench.prefab	58b3c65d-1915-497d-b652-f6beba004def	BloodKelp_Trench	bloodKelpTrench	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelpTwo/Cave.prefab	420671a1-d03b-4100-b0f7-fde526ff852b	BloodKelpTwo_Cave	bloodKelpTwo	Playable	Resolved
+WorldEntities/Atmosphere/BloodKelpTwo/Normal.prefab	e70f0843-0e9f-472c-b0a2-796e278958e8	BloodKelpTwo	bloodKelpTwo	Playable	Resolved
+WorldEntities/Atmosphere/CragField/CragFieldCaveTeleporter.prefab	59d1be30-a77f-4722-b42c-4a2db2334654	PrecursorCave_CragField	-	-	UnknownName
+WorldEntities/Atmosphere/CrashZone/CrashZone_Trench.prefab	261edd73-fc6b-46a5-a294-0604b47e3df3	CrashZone_Trench	crashZone	Playable	Resolved
+WorldEntities/Atmosphere/CrashZone/CrashZonelootexclusion_box.prefab	f699ffb2-c099-45c6-ba8c-0130223046a1	CrashZone_NoLoot	crashZone	Playable	Resolved
+WorldEntities/Atmosphere/CrashZone/CrashZonelootexclusion_sph.prefab	4a75b970-c77b-4ced-82a2-7a0fbff2a18f	CrashZone_NoLoot	crashZone	Playable	Resolved
+WorldEntities/Atmosphere/DeepGrandReef/Normal_named(sphere).prefab	1b8586bc-cb03-4c87-9db2-2218aab95be1	deepGrandReef	deepGrandReef	Playable	Resolved
+WorldEntities/Atmosphere/DeepGrandReef/Normal_named.prefab	663b3aad-09f6-4534-bdee-d55d01033934	deepGrandReef	deepGrandReef	Playable	Resolved
+WorldEntities/Atmosphere/DeepGrandReef/Open_named (Sphere).prefab	afc635fd-085b-4d94-9999-20be888ad339	deepGrandReef	deepGrandReef	Playable	Resolved
+WorldEntities/Atmosphere/DeepGrandReef/Open_named.prefab	989d1bec-d204-4cbe-a759-f2571575b9a1	deepGrandReef	deepGrandReef	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/Dunes BiomeOR.prefab	98dbe609-3f96-4d6a-b5d3-68b3a3cf0634	Dunes	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/DunesCaveAtmo_Sph.prefab	50c2a56a-dcd7-4131-8d88-c845b25cbd54	Dunes_Cave_light	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/DunesCaveDark20_Sph.prefab	c9b2e90e-7ba6-4fe2-813e-6f91a0ff2509	Dunes_Cave_Dark	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/DunesCaveDark20_box.prefab	384b7b62-81dc-4cfe-b908-882f5d9d9f38	Dunes_Cave_Dark	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/DunesThermalVents_sph.prefab	91094afb-f79e-4efa-aab5-18602679cf7b	Dunes_ThermalVents	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/Dunes_Wreck_Adjust.prefab	7eb8e770-0e14-4389-acb2-536b484872b2	Dunes_wreck	dunes	Playable	Resolved
+WorldEntities/Atmosphere/Dunes/Sparse Zone Dunes.prefab	4c943b63-e835-4b1b-adca-91eec6b9b32b		-	-	NoBiome
+WorldEntities/Atmosphere/FloatingIslands/CaveTeleporter.prefab	90d538f2-50bd-4259-be85-8090192956d7	FloatingIslandCaveTeleporter	-	-	UnknownName
+WorldEntities/Atmosphere/FloatingIslands/CaveTeleporter_Sph.prefab	80cacf79-a7f0-40fe-9d65-f1180777331f	FloatingIslandCaveTeleporter	-	-	UnknownName
+WorldEntities/Atmosphere/FloatingIslands/Dark.prefab	4b6d2bb0-7dbc-419a-821c-31f3397f1acf	UnderwaterIslands	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/FloatingIslands/FloatingIslandBelow.prefab	1c3f8305-c6b2-4640-b799-e535e65a8e15	FloatingIslandBelow	-	-	UnknownName
+WorldEntities/Atmosphere/FloatingIslands/Islands.prefab	f6a02723-61cf-4048-9dac-543b5aa241d3	FloatingIsland	-	-	UnknownName
+WorldEntities/Atmosphere/GrandReef/Cave.prefab	5d258b1c-8723-4420-a9b1-95f5e56e2680	GrandReef_Cave	grandReef	Playable	Resolved
+WorldEntities/Atmosphere/GrandReef/GrandReef_WreckInterior_Atmosphere.prefab	bff31cee-146a-4f79-b965-b81d6f897baa	grandReef_wreck	grandReef	Playable	Resolved
+WorldEntities/Atmosphere/GrandReef/Normal.prefab	1b414585-d071-48c7-b35c-7ba870989509		-	-	NoBiome
+WorldEntities/Atmosphere/GrandReef/Normal_named.prefab	93d2fb44-eae2-4340-b372-2ecbe15b14c4	GrandReef	grandReef	Playable	Resolved
+WorldEntities/Atmosphere/GrandReef/ThermalVent.prefab	8a36cdf1-0606-4c05-861d-eb6d95d2a497	GrandReef_ThermalVent	grandReef	Playable	Resolved
+WorldEntities/Atmosphere/GrassyPlateaus/Caves (Sphere).prefab	54759572-b554-42d2-9c57-aa58da71296d	grassyPlateaus_Cave	grassyPlateaus	Playable	Resolved
+WorldEntities/Atmosphere/GrassyPlateaus/Caves.prefab	b179b366-4342-4545-aa4d-a86ad88b780e	grassyPlateaus_Cave	grassyPlateaus	Playable	Resolved
+WorldEntities/Atmosphere/GrassyPlateaus/Normal.prefab	cf03187a-e77a-4f2c-9755-6f3921ec6476	GrassyPlateaus	grassyPlateaus	Playable	Resolved
+WorldEntities/Atmosphere/GrassyPlateaus/Tower.prefab	736c0a79-c771-45ad-9876-7d18b5ce06c2	GrassyPlateaus_Tower	grassyPlateaus	Playable	Resolved
+WorldEntities/Atmosphere/GrassyPlateaus/WreckInterior.prefab	e85adb0d-665e-48f5-9fa2-2dd316776864	GrassyPlateaus_WreckInterior	grassyPlateaus	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/CastleChamber.prefab	107fefd3-d907-4648-8753-a8a8c0a6f293	ILZCastleChamber	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/CastleTunnel.prefab	1dbf4801-b2b7-4aaa-bd66-d1d925359d01	ILZCastleTunnel	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/Entrance.prefab	d4ab56b9-91af-4cf4-94d9-0ee7b1b9957d	ILZChamberEntrance	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/ILZChamber_Dragon.prefab	25adf9c6-8bea-4dd5-baa6-5ede49340aa2	ILZChamber_Dragon	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/ILZLava.prefab	5ae43c48-7f5c-4943-86af-09f50602849e	ilzLava	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/ILZLava_Sphere.prefab	c6c5c63d-2380-4a26-ac54-679acc339cb5	ilzLava	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/Large Chamber.prefab	d98e748a-90bc-47f5-ba80-a70acc5d350e	ILZChamber	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/MagmaBubble_Sphere.prefab	acc078b2-11a4-447a-bba2-79a7aff32a55	ILZChamber_MagmaBubble	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/MagmaTree.prefab	4a998153-97a4-4242-b7c6-ab6855a53602	ILZChamber_MagmaTree	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/MagmaTree_Sphere.prefab	a276b8a6-11e0-444d-b46d-02209a3957d9	ILZChamber_MagmaTree	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/Inactive Lavazone/Normal.prefab	ad02d2ce-0cb7-4e70-8f44-f7a8354561c7	ILZCorridor	inactiveLavaZone	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Caves (Sphere).prefab	7ccfeb6c-d5cd-4006-aa6e-d0a71c614b43	JellyshroomCaves	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Caves Entrance.prefab	4bc74b15-6f92-45d2-87de-e82a531ace5e	jellyshroomCaves_Entrance	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Caves.prefab	2d7cdc83-c7db-4d19-bb6a-084f18b039ec	JellyshroomCaves	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Geyser (Sphere).prefab	9ba9489f-c28d-4f89-b877-0a7796f2ee5d	JellyshroomCaves_Geyser	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Geyser.prefab	e6175247-4963-420d-8fc5-58c711a08d56	JellyshroomCaves_Geyser	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/JellyshroomCaves/Normal.prefab	89422755-ec85-4d68-8005-a0b319346dcd	JellyshroomCaves	jellyshroomCaves	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Caves (Sphere).prefab	b13e84bb-f76d-4cc0-aa35-fc1a72a8bc60	KelpForest_Cave	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Caves Entrance (Sphere).prefab	a0372774-a256-475c-a1a0-f3136fc6625b	KelpForest_CaveEntrance	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Caves Entrance.prefab	bec6223a-4ecf-4ec9-bfe5-598c76361729	KelpForest_CaveEntrance	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Caves.prefab	d84e5b62-ac0b-441e-8786-1ed7b2c20d60	KelpForest_Cave	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Dense (Sphere).prefab	bdb63d26-5fa0-4352-9dae-7d479121b998	KelpForest_Dense	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Dense.prefab	e6f6ebfc-ee5d-456d-9ed5-b88e7bcc42c8	KelpForest_Dense	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/KelpForest_Wreck_Adjust.prefab	0ae50529-0f64-474a-9e19-5ae3e9020a8c	kelpForest_WreckInterior	kelpForest	Playable	Resolved
+WorldEntities/Atmosphere/KelpForest/Normal (Sphere).prefab	a7e272d1-46ce-4346-abb5-2f709eba0777		-	-	NoBiome
+WorldEntities/Atmosphere/KelpForest/Normal.prefab	10e085ad-f967-4d14-8102-a47349baa207		-	-	NoBiome
+WorldEntities/Atmosphere/KooshZone/HugeKooshLoot.prefab	1a97d459-0b76-4116-9155-43893526a521		-	-	NoBiome
+WorldEntities/Atmosphere/KooshZone/KooshCaveSpecial.prefab	19e3c9a7-66e5-4849-abc6-11d48d63887a		-	-	NoBiome
+WorldEntities/Atmosphere/KooshZone/KooshCaveTeleporter.prefab	c01003c7-38d7-4c1c-9677-58921712e514	PrecursorCave_KooshZone	-	-	UnknownName
+WorldEntities/Atmosphere/KooshZone/KooshZoneBiome_box.prefab	3c056089-bb4e-4967-987a-83d83fd97cbe	KooshZone	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/KooshZoneCaveBiome.prefab	2e203796-7e60-4f32-a6aa-af42e2c7d77a	KooshZone	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/KooshZone_Geyser.prefab	c2643db0-26e7-4250-9203-e4a7bbd0b1ec	KooshZone_Geyser	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Koosh_Defaultlight_Box.prefab	8b1f82ba-2c7b-48d0-91f0-f5be163af0aa		-	-	NoBiome
+WorldEntities/Atmosphere/KooshZone/Kooshcave_Dark_green_box.prefab	03e0b225-ceb0-40dd-832d-e0e2d63032d0	kooshZone_cave_dark	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Kooshcave_Dark_green_sphere.prefab	a8ddd876-cb85-4c32-a77c-3ae9de0baa62	kooshZone_cave_dark	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Kooshcave_trans_green_box.prefab	886b5161-0830-48e7-9318-af78d613d510	kooshZone_cave_trans	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Kooshcave_trans_green_night_box.prefab	92af11b3-5a88-4016-a742-ab95c5fd7dfe	kooshZone_cave_trans	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Kooshcave_trans_green_sphere.prefab	9ef26602-d7cf-43d5-9eb0-b7ae0fad84bd	kooshZone_cave_trans	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Kooshzone_Wreck_Adjust.prefab	81db652d-acdd-444b-9ad6-f58f94776a12	kooshZone_wreck	kooshZone	Playable	Resolved
+WorldEntities/Atmosphere/KooshZone/Normal.prefab	176bcfff-624b-4f2b-8fb6-b80a540faa6a		-	-	NoBiome
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField.prefab	59d84031-4216-4dcc-8ece-b39aca53f9ad	LostRiver_BonesField	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_BloodKelpEntrance_Pool.prefab	1dc2a075-fc2d-49a9-a857-460538d63112	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_CavePond.prefab	00980c3a-4e20-4864-a4ef-d18164e0a647	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Cave_Pool.prefab	29c0c1f4-0021-42aa-b596-e138f0ca2c86	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Cave_Sphere.prefab	0c25f07a-fd44-43f9-83c5-67da751ff3f7	LostRiver_BonesField_Cave	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Corridor.prefab	8b3ba7af-cb8b-433e-9c48-cbff10b17fd3	LostRiver_BonesField_Corridor	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Corridor_Stream.prefab	bb9ff342-2a02-4338-a8a6-4ad918c4950a	LostRiver_BonesField_Corridor_Stream	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Corridor_StreamFading.prefab	3ee9a5e5-b855-4b1c-97f6-f4f746ac457c	LostRiver_BonesField_Corridor_Stream	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Lake.prefab	d931cce0-b6b3-4f70-aa08-e1ed5ef12b29	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_LakeBorderFading.prefab	3c4a120b-13c1-4478-afdf-5ecdd0a825e1	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Lake_Nosurface.prefab	775e3e0a-9670-43a0-a182-5d000ad8d60a	LostRiver_BonesField_LakePit	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Ledge.prefab	af1e5b4e-1417-49d6-b20b-5f980a2ccee8	LostRiver_BonesField_Ledge	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Skeleton.prefab	6b47bc76-d0b0-41ab-a2e5-81a62ebc66b5	LostRiver_BonesField_Skeleton	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_ThermalVent.prefab	5340de25-0481-4239-9702-b9bb0a96cbd2	LostRiver_BonesField_ThermalVent	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Canyon/LostRiver_Canyon.prefab	f3cc7890-36a2-4f11-8b29-c13cf771f1e9	LostRiver_Canyon	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Canyon/LostRiver_Canyon_Lakes_NoVisual.prefab	4abced7f-1ce9-4ac6-97ab-aa389213c0e4	LostRiver_Canyon	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Canyon/LostRiver_SkeletonCave.prefab	f1a5a572-9f96-4ff8-953c-651a4786e5e8	LostRiver_SkeletonCave	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Canyon/LostRiver_SkeletonCave_Cave_Sphere.prefab	d95216c8-fa6b-4a20-8c04-e23532bc57a6	LostRiver_SkeletonCave_Skeleton	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Corridor/LostRiver_Corridor.prefab	f7d46bd9-0f77-450f-9c27-9a2172f6e93b	LostRiver_Corridor	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Corridor/LostRiver_Corridor_ThermalVents.prefab	b28f7dae-fbb6-49b6-9f3d-f98fb7eabb26	LostRiver_Corridor_ThermalVents	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiverCaveTeleporter.prefab	8e750cee-8f50-4103-97a3-175624f32750	PrecursorCave_GhostTree	-	-	UnknownName
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree.prefab	688b9ffb-e0d9-4177-8de4-49e1ce9dcfd6	LostRiver_GhostTree	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Lake.prefab	3f045eb4-2b49-4aaf-95af-ce91a8f457f3	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_LakeBorderFading.prefab	cef4460f-31ca-4b7e-beb5-907fe8131c97	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Lake_Loot.prefab	3e9ab933-2f9c-45c7-9c2b-3c630576d8d4	LostRiver_GhostTree_Lake	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Lower.prefab	7180f59f-42ae-4f93-9c9c-5c9a5feac379	LostRiver_GhostTree_Lower	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Skeleton.prefab	f9db5e76-0f8a-49f6-8e5e-d782d83fbfe5	LostRiver_GhostTree_Skeleton	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Waterfall.prefab	e712fdde-4d3d-4242-b618-cd43a08f0e96	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_DeepGrandReef_Pool.prefab	4d74a7e4-24b2-42b5-850c-bcea4b2038a9	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction.prefab	acf92ba7-2e75-44c9-ab23-9ca1dc3bedda	LostRiver_Junction	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction_ThermalVent.prefab	f5c542df-7388-42dd-83c6-fd3b60128ca1	LostRiver_Junction_ThermalVent	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction_Water.prefab	9cd2d504-ff8f-4a16-8d42-f8cd55ac8529	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction_Water_BorderFading.prefab	e25ad60e-908d-41d5-b303-aaddb1f93f12	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction_Water_Nosurface.prefab	c2c34745-e8bb-4ede-b7c0-f0773773c23d	LostRiver_Junction_Water	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_TreeCove_Water.prefab	32e0b9a0-236b-4e03-81cf-921a92ef735d	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_TreeCove_WaterBorderFading.prefab	bdfe934f-e1cc-4c26-ac1c-6bd8a305bc1f	-	-	-	NoVolume
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_TreeCove_Water_A(nosurf).prefab	4ec5aca9-7873-4d5d-9bc9-e27d26d13025	LostRiver_TreeCove_Water	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_Tree_Cove.prefab	8cecc172-293a-46af-9e60-1e2fca4906a9	LostRiver_TreeCove	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_Tree_Cove_Treeopen.prefab	81713004-b3a1-4fcb-8fa8-ac7b332505d0	LostRiver_TreeCove_Tree	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_Tree_Cove_Treeopen_Sph.prefab	76e76754-2537-410e-8ba3-eab48e294631	LostRiver_TreeCove_Tree	lostRiver	Playable	Resolved
+WorldEntities/Atmosphere/Mesa/CrashZone_Mesa.prefab	4ad5d64d-6a1d-45fe-86f5-8ad3f384dbd4	CrashZone_Mesa	crashZone	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains.prefab	be027095-1d7a-43ba-ad09-6885db9628de	mountains	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/MountainsBaseBox.prefab	eac9cc2c-bbf9-4a4c-b19b-344ad0d937fe		-	-	NoBiome
+WorldEntities/Atmosphere/Mountains/Mountains_CaveEntrance_cube.prefab	fc9c96ac-5c0b-4611-897d-aaae644e4458	Mountains_CaveEntrance	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_CaveEntrance_sph.prefab	6515e66c-7b2a-4511-8251-942b9ff49bb2	Mountains_CaveEntrance	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_Cave_sph.prefab	b81b2503-e580-4448-b151-a02c8e86abcf	Mountains_Cave	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandCaveEntrance_Surface_cube.prefab	633f6688-b8d7-450e-b8ca-1b5b4a4bb14b	Mountains_IslandSurface_CaveEntrance	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandCaveEntrance_Surface_sph.prefab	3d17d490-9c2a-4705-8e49-6240de1ca915	Mountains_IslandSurface_CaveEntrance	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandCaveEntrance_sph.prefab	6ec47bde-9a3a-4db3-b3e8-fc509ca23d94	Mountains_Island_CaveEntrance	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandCave_Surface_sph.prefab	204fce90-17ae-4d34-a752-e8abfed1aac6	Mountains_IslandSurface_Cave	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandCave_sph.prefab	f8e33be6-fa34-424b-85c4-cfea9549a268	Mountains_Island_Cave	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_IslandTeleporter_sph.prefab	202a4db8-99ae-4a55-bf28-64821f2cbe69	Mountains_Island_Teleporter	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_ThermalVent.prefab	8cf785a3-137e-4bc8-abf1-8e193aabc5e9	Mountains_ThermalVent	mountains	Playable	Resolved
+WorldEntities/Atmosphere/Mountains/Mountains_WreckInterior_Atmosphere.prefab	658c1489-7ace-4a22-a2ab-dde8ca994dd5	mountains_wreckinterior	mountains	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/Caves (Sphere).prefab	3b354a10-f24c-43f6-ba92-759b455546c6		-	-	NoBiome
+WorldEntities/Atmosphere/MushroomForest/Caves.prefab	8aaa6099-6aba-4129-806e-e8fc214bc0cd		-	-	NoBiome
+WorldEntities/Atmosphere/MushroomForest/CoralRootZone_Box.prefab	bf315203-c105-44f9-9fa4-cea65dd823c6	MushroomForest	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/CoralRootZone_Sphere.prefab	942b10ec-e96d-436e-8ea7-02dfd902b7e2	MushroomForest	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/GiantCoralTree_Box.prefab	75ae187a-3b06-402d-a23f-eadd6b9c3131		-	-	NoBiome
+WorldEntities/Atmosphere/MushroomForest/GiantCoralTree_sphere.prefab	2e58e31f-771e-42fc-9dd2-c0cac3352784		-	-	NoBiome
+WorldEntities/Atmosphere/MushroomForest/MF_cache_box.prefab	8ea729cc-719f-4c30-b004-d198b5c49766	PrecursorCave_MushroomForest	-	-	UnknownName
+WorldEntities/Atmosphere/MushroomForest/MF_cache_sph.prefab	92134a43-6208-4334-bf18-86d47b724aef	PrecursorCave_MushroomForest	-	-	UnknownName
+WorldEntities/Atmosphere/MushroomForest/MF_caves_dark_box.prefab	38be97b7-d57e-4cc0-8258-ffead8fa7c31	mushroomForest_cave_dark	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/MF_caves_dark_sph.prefab	3cdd8a3a-49fa-4384-9594-782ef1df7f79	mushroomForest_cave_dark	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/MF_caves_light_box.prefab	ed71de8c-f40e-42cf-ba33-cfbac00c4af8	mushroomForest_cave_light	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/MF_caves_light_sph.prefab	5ab88ca4-0b25-4012-8a19-03abe72b94b2	mushroomForest_cave_light	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/MushroomForestBiome_Sphere.prefab	4665b512-b098-4dbb-a2ce-ecf30f268ea0	MushroomForest	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/MushroomForest_Wreck_Adjust.prefab	9687766e-ac0c-49d7-baa7-f0b4478edd4c	mushroomForest_wreck	mushroomForest	Playable	Resolved
+WorldEntities/Atmosphere/MushroomForest/Normal.prefab	bbf7473c-1782-40c2-8e57-0c8a9ccc4d21		-	-	NoBiome
+WorldEntities/Atmosphere/Precursor/Caches/Precursor_Cache_Atmosphere.prefab	f5dc3fa5-7ef7-429e-9dc6-2ea0e97b6187	PrecursorCache	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Antechamber_Atmosphere.prefab	d645d7c7-76a2-4818-86b0-5c3e37a51e31	Prison_Antechamber	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Aquarium_Atmosphere.prefab	5f44a1ca-3cfe-4554-817a-fac0ce9992d0	Prison_Aquarium	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Aquarium_Cave_Atmosphere.prefab	ac1065e1-b402-4dcd-94c1-de008018a8f7	Prison_Aquarium_Cave	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Aquarium_Mid_Atmosphere.prefab	c7cba186-68f1-4b8d-a3dc-6d6c06cd6ec3	Prison_Aquarium_Mid	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Aquarium_Upper_Atmosphere.prefab	74265e8a-4e84-4aff-8b49-8f1563014106	Prison_Aquarium_Upper	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_Moonpool_Atmosphere.prefab	21cfd6fe-2f7d-401b-ad26-626fa7a7cce6	Prison_Moonpool	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_UpperRoom_Atmosphere.prefab	6670a49a-95ed-4de9-b805-8bfbadc4bd4b	Prison_UpperRoom	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_UpperRoom_Atmosphere_LowDetail.prefab	30cf8272-dc8a-4f6e-a7b5-64c65dd2e73c	Prison_UpperRoom	primaryContainmentFacility	Playable	Resolved
+WorldEntities/Atmosphere/Precursor/Gun/Precursor_Gun_ControlRoom_Atmosphere.prefab	437229b1-9be7-4fef-93df-12ca315698f1	Precursor_Gun_ControlRoom	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/Gun/Precursor_Gun_InnerRooms_Atmosphere.prefab	6d632ca7-3dcd-44c2-81ef-fa4e2144e034	Precursor_Gun_InnerRooms	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/Gun/Precursor_Gun_MoonPoolWater_Atmosphere.prefab	9650806c-0b21-437a-85b9-fc5c08a49c30	Precursor_Gun_MoonPoolWater	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/Gun/Precursor_Gun_NoLoot_Atmosphere.prefab	993c9891-59de-451f-9f30-d6fa3c528510	Precursor_Gun_NoLoot	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/Gun/Precursor_Gun_OuterRooms_Atmosphere.prefab	8df358b5-a045-4914-9c98-2af62ea35756	Precursor_Gun_OuterRooms	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/LavaCastleBase/Precursor_LavaCastleBase_Atmosphere.prefab	b8e4c7f2-c18c-48ce-bac3-8576cf2eee39	Precursor_LavaCastleBase	-	-	UnknownName
+WorldEntities/Atmosphere/Precursor/LostRiverBase/Precursor_LostRiverBase_Atmosphere.prefab	c64c92d7-851c-4d86-8075-fb826c5f2a98	Precursor_LostRiverBase	-	-	UnknownName
+WorldEntities/Atmosphere/SafeShallows/Caves (Sphere).prefab	88cc155e-6ade-4be5-9946-b702c392495a	safeShallows_Cave	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/Caves Entrance (Sphere).prefab	ebdebe72-2c09-4dcb-9a8d-3226a105886a	safeShallows_CaveEntrance	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/Caves Entrance.prefab	5a461ae6-7db8-46ef-9f89-9ffff2c3bae1	safeShallows_CaveEntrance	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/Caves.prefab	1de4fe84-4a64-4d80-9572-1b3e97e461d2	safeShallows_Cave	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/HugeTube (Sphere).prefab	371c2241-7333-4827-a220-39bb4b6686f2	safeShallows_HugeTube	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/HugeTube.prefab	f08f286f-8b5d-4b22-96ff-21007d34f31f	safeShallows_HugeTube	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/SafeShallows/Normal.prefab	40fed71c-2ced-4849-b52f-459865a5d613		-	-	NoBiome
+WorldEntities/Atmosphere/SafeShallows/WreckInterior.prefab	0167e31d-c8f7-40a7-bfc2-557fb41b90bf	SafeShallows_WreckInterior	safeShallows	Playable	Resolved
+WorldEntities/Atmosphere/Ship/CrashedShip_InteriorEntrance_obsolete.prefab	a391dda4-6e4f-4d8b-ac85-0e910e81f42e	CrashedShip_Interior_Entrance_03	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Cargo.prefab	faef77dc-65e2-4fe5-9099-bc3980aba4dd	CrashedShip_Interior_Cargo	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Dark.prefab	920899e8-da15-49ff-8b7c-ee951a423bb5	CrashedShip_Interior_Dark	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Elevator.prefab	fa362f56-4de4-4b05-b4f0-e46cc555ffb4	CrashedShip_Interior_Elevator	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_01_01.prefab	f42ef34d-b5b8-4ee9-b0dc-c29eb98d9abb	CrashedShip_Interior_Entrance_01_01	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_01_02.prefab	c1c83fe3-e4d6-49ab-af76-c67bd2aaed05	CrashedShip_Interior_Entrance_01_02	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_01_03.prefab	dd4606fe-51b4-4037-8d19-b6e9eb677fb4	CrashedShip_Interior_Entrance_01_03	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_02_01.prefab	45510933-8c98-4f65-8a56-f6566bcfb96b	CrashedShip_Interior_Entrance_02_01	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_02_02.prefab	38a3c561-d6c9-481b-8eb4-20d8bf6fe839	CrashedShip_Interior_Entrance_02_02	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Entrance_03.prefab	d60ecea2-5307-4368-9c08-4e96a6866356	CrashedShip_Interior_Entrance_03	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Exo.prefab	ef997794-fcc7-4bb2-9b4a-16c278236124	CrashedShip_Interior_Exo	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_ExoPipes.prefab	241fc1e4-d045-4462-93dc-d2c8cb91d130	CrashedShip_Interior_ExoPipes	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_LivingArea.prefab	a5451aee-16a3-406a-ac64-5aa14ac1c785	CrashedShip_Interior_LivingArea	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Locker.prefab	66f23e46-6ddd-46bb-9710-3374c4e0815f	CrashedShip_Interior_Locker	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_LockerCorridor.prefab	8e6db01e-c7be-4182-8e0d-2a7c20341e10	CrashedShip_Interior_LockerCorridor	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_Power.prefab	7977185e-b949-4a6f-8ed6-95c6dc3c2af9	CrashedShip_Interior_Power	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_PowerCorridor.prefab	d6b9e61f-764e-4f27-9549-ca778ee3128a	CrashedShip_Interior_PowerCorridor	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_SeamothRoom.prefab	a59cee6b-f605-4641-a236-15ee99ac31f2	CrashedShip_Interior_SeamothRoom	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_THallway.prefab	627d0380-6202-4820-882e-72363ce20a40	CrashedShip_Interior_THallway	-	-	UnknownName
+WorldEntities/Atmosphere/Ship/CrashedShip_Interior_THallwayLower.prefab	72c26bc6-41ec-42ed-80c0-59424041b920	CrashedShip_Interior_THallwayLower	-	-	UnknownName
+WorldEntities/Atmosphere/SparseReef/Cave.prefab	862b4c7c-c2c2-4d7e-a1cd-4d1bb2f2001e	SparseReef_Cave	sparseReef	Playable	Resolved
+WorldEntities/Atmosphere/SparseReef/Deep.prefab	4db7b460-8fb8-4947-bb7b-faa052b8c263	SparseReef_Deep	sparseReef	Playable	Resolved
+WorldEntities/Atmosphere/SparseReef/Normal.prefab	d4db1d27-b96a-419b-bb99-229fde8cfc10	SparseReef	sparseReef	Playable	Resolved
+WorldEntities/Atmosphere/SparseReef/Spikes.prefab	784310de-5416-4cde-9cf1-c7d6694fa477	SparseReef_Spike	sparseReef	Playable	Resolved
+WorldEntities/Atmosphere/SparseReef/Wreck.prefab	48a0ba2e-0526-4826-a634-bcbe5efe61dc	sparseReef_Wreck	sparseReef	Playable	Resolved
+WorldEntities/Atmosphere/SparseZone/Normal.prefab	6843ce38-7ccd-4863-9c17-63284aa680dc		-	-	NoBiome
+WorldEntities/Atmosphere/TreaderPath/Treader Path Base.prefab	141a2a48-7ae1-4b43-be4e-31f90b7990a0		-	-	NoBiome
+WorldEntities/Atmosphere/TreaderPath/TreaderPath_Wreck_Adjust.prefab	65b20919-cdc2-449f-a25a-b797e6fe2f4f	seaTreaderPath_wreck	seaTreaderPath	Playable	Resolved
+WorldEntities/Atmosphere/TreaderPath/Treader_Collision_box.prefab	626f6739-acb0-4dfc-bbab-9b627767403c	-	-	-	NoVolume
+WorldEntities/Atmosphere/TreaderPath/Treader_Path_Cave_Dark_Box.prefab	2e9353b8-5c31-4d92-af36-0daa9422f3da	seaTreaderPath_Cave_dark	seaTreaderPath	Playable	Resolved
+WorldEntities/Atmosphere/TreaderPath/Treader_Path_Cave_Dark_Sph.prefab	bfc0ea36-4f66-49cf-bb8d-9ccec3235041	seaTreaderPath_Cave_dark	seaTreaderPath	Playable	Resolved
+WorldEntities/Atmosphere/TreaderPath/Treader_Path_Cave_Tr_Box.prefab	d736be3a-68c0-43b9-bc8f-a7f07ac38924	seaTreaderPath_Cave_light	seaTreaderPath	Playable	Resolved
+WorldEntities/Atmosphere/TreaderPath/Treader_Path_Cave_Tr_Sph.prefab	283267b7-f023-4310-b1b6-99cd24c22afc	seaTreaderPath_Cave_light	seaTreaderPath	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/Cave.prefab	fff7ee12-c75d-48bd-a6e0-8fb4856cd1ab	underwaterIslands_Cave	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/Geyser (Sphere).prefab	5c8ec717-a144-4393-8e98-0851f838a26d	underwaterIslands_Geyser	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/Island.prefab	5eec7a47-2c38-4431-8306-27e0215d0a35	UnderwaterIslands_Island	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/IslandCave.prefab	27486b49-8b28-41d1-bfd1-875fabff0779	underwaterIslands_IslandCave	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/Normal.prefab	19a28dc6-33d6-4049-808b-b68ba5b3152e	UnderwaterIslands	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/NormalDark.prefab	004c8e2c-284d-4221-9d1b-251af8dc56c9	UnderwaterIslands	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/UnderwaterIslands_Wreck_Adjust.prefab	d2c92e45-6138-4e9a-810d-be77ec9cdf82	underwaterIslands_wreck	underwaterIslands	Playable	Resolved
+WorldEntities/Atmosphere/UnderwaterIslands/ValleyFloor.prefab	62a47c16-bf83-46ee-b16b-8cc35e7df97d	UnderwaterIslands_ValleyFloor	underwaterIslands	Playable	Resolved

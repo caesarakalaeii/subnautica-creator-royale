@@ -1,0 +1,561 @@
+/* console.css is the operator console's layout on top of style.css. The page is split by when
+ * things are used: verbs in the left rail, the command queue in the centre, cameras and players on
+ * the right, and setup-time editors (rules, roster, exceptions) in a tabbed drawer below. */
+
+/* The operator chip, in violet to set a person apart from the page accent. */
+.op {
+  padding: 5px 12px;
+  border-radius: 4px;
+  background: #221a2e;
+  color: #c4b5fd;
+  font: 600 12px var(--sans);
+}
+
+.op[hidden] {
+  display: none;
+}
+
+/* ---- the token gate ------------------------------------------------------------------------ */
+
+.lock {
+  max-width: 440px;
+  /* Fill the column so the colophon sits at the foot of the page. */
+  margin: 9vh auto auto;
+  padding: 22px 26px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lock__head {
+  margin: 0 0 10px;
+  font: 700 15px var(--sans);
+  color: var(--ink);
+}
+
+.lock__hint {
+  margin: 10px 0;
+  color: var(--faint);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.lock__hint code {
+  color: var(--danger);
+}
+
+.lock__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.lock__label {
+  color: var(--faint);
+  font: 600 10.5px var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lock__field input,
+.lock__field select {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px var(--mono);
+}
+
+.lock__field input:focus,
+.lock__field select:focus {
+  border-color: var(--cyan);
+  outline: none;
+}
+
+/* ---- the notes strip ------------------------------------------------------------------------ */
+
+[data-field="operator"] {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `display: flex` above outranks the UA `[hidden]` rule, so restore it. */
+[data-field="operator"][hidden] {
+  display: none;
+}
+
+.notes {
+  padding: 0 22px;
+}
+
+/* ---- the three columns --------------------------------------------------------------------- */
+
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px 1fr 340px;
+}
+
+/* ---- the verb rail -------------------------------------------------------------------------- */
+
+.rail {
+  overflow: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px 14px;
+}
+
+.rail__title {
+  margin: 0 0 10px 2px;
+  color: var(--faint);
+  font: 700 10.5px var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rail__group {
+  margin-bottom: 18px;
+}
+
+.rail__label {
+  margin: 0 0 6px 2px;
+  color: var(--faint);
+  font: 700 10px var(--sans);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rail__hint {
+  margin: 4px 2px 0;
+  color: var(--faint);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.rail__hint code {
+  color: var(--dim);
+}
+
+/* One control per verb: word, optional field, button. Full width so nothing wraps. */
+.verb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 5px;
+  padding: 4px 4px 4px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.verb__word {
+  color: var(--ink);
+  font: 600 13px var(--mono);
+  white-space: nowrap;
+}
+
+.verb:hover .verb__word {
+  color: var(--cyan);
+}
+
+.verb input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: 12.5px var(--mono);
+}
+
+.verb input:focus {
+  outline: none;
+  border-bottom-color: var(--cyan);
+}
+
+.verb input::placeholder {
+  color: var(--faint);
+}
+
+.verb button {
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #1d1d2c;
+  color: var(--dim);
+  font: 600 12px var(--sans);
+  cursor: pointer;
+}
+
+.verb button:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+/* Disarmed until the game server answers the queued command, and visibly so. */
+.verb button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.verb button:disabled:hover {
+  color: var(--dim);
+  border-color: var(--line);
+}
+
+/* Verbs that must be typed to confirm are highlighted in coral. */
+.verb--typed {
+  border-color: #4c1d24;
+  background: #1c1016;
+}
+
+.verb--typed .verb__word,
+.verb--typed:hover .verb__word {
+  color: var(--danger);
+}
+
+.verb--typed input {
+  color: var(--danger);
+  border-bottom-color: #4c1d24;
+}
+
+.verb--typed button {
+  border-color: #4c1d24;
+  background: #2b1519;
+  color: var(--danger);
+}
+
+/* A follow control: the camera's name in place of the verb. Dashed field, since leaving it empty
+   releases the camera. */
+.verb.follow .verb__word {
+  color: #c4b5fd;
+}
+
+/* ---- the queue stream ----------------------------------------------------------------------- */
+
+.stream {
+  overflow: auto;
+  padding: 16px 26px;
+}
+
+.stream__head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stream__title {
+  color: var(--faint);
+  font: 700 11px var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.stream__said {
+  font: 12.5px var(--mono);
+  color: var(--faint);
+}
+
+.stream__said[data-tone="ok"] {
+  color: var(--ok);
+}
+
+.stream__said[data-tone="bad"] {
+  color: var(--danger);
+}
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.queue li {
+  margin-bottom: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.queue li[data-tone="ok"] {
+  border-left-color: var(--ok);
+}
+
+.queue li[data-tone="warn"] {
+  border-left-color: var(--warn);
+}
+
+.queue li[data-tone="bad"] {
+  border-left-color: var(--danger);
+}
+
+.queue__head {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font: 12px var(--mono);
+  color: var(--faint);
+}
+
+.queue__head > span:first-child {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.queue__state {
+  margin-left: auto;
+}
+
+/* The mod's reply; pre-wrap keeps long refusals readable. */
+.queue__answer {
+  margin: 8px 0 0;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.queue li[data-tone="bad"] .queue__answer {
+  color: #ffc9c9;
+}
+
+.queue li[data-tone="warn"] .queue__answer {
+  color: #fde6b8;
+}
+
+/* ---- the state rail: cameras and who is here ------------------------------------------------- */
+
+.state {
+  overflow: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+}
+
+.state section {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.state__head {
+  margin: 0 0 10px;
+  color: var(--faint);
+  font: 700 10.5px var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.state__hint {
+  margin: 10px 0 0;
+  color: var(--faint);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.state__hint code {
+  color: var(--dim);
+}
+
+.cams {
+  display: flex;
+  flex-direction: column;
+}
+
+.here {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.here th {
+  padding: 3px 6px 3px 0;
+  color: var(--faint);
+  font: 600 10px var(--sans);
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.here td {
+  padding: 6px 6px 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.here td:first-child {
+  font-family: var(--mono);
+}
+
+/* A row where the game and the booth still disagree (reconcile pending). */
+.here .roster__pending td {
+  color: var(--warn);
+}
+
+.here .roster__unbound td {
+  color: var(--danger);
+}
+
+/* ---- the drawer: rules, people, exceptions ---------------------------------------------------- */
+
+.drawer {
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.drawer__bar {
+  display: flex;
+  gap: 2px;
+  padding: 0 22px;
+}
+
+.drawer__tab {
+  padding: 10px 14px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--dim);
+  font: 600 12.5px var(--sans);
+  cursor: pointer;
+}
+
+.drawer__tab:hover {
+  color: var(--ink);
+}
+
+.drawer__tab[aria-selected="true"] {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+}
+
+.drawer__panel {
+  max-height: 240px;
+  overflow: auto;
+  padding: 14px 22px 18px;
+}
+
+.drawer__panel[hidden] {
+  display: none;
+}
+
+.drawer__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+
+.lock__field--note {
+  flex: 1;
+}
+
+.editorField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editorField textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 12.5px/1.5 var(--mono);
+  resize: vertical;
+}
+
+.editorField textarea:focus {
+  border-color: var(--cyan);
+  outline: none;
+}
+
+/* The button that loads a previous revision into the editor. Quiet, since it only loads; sending
+   is still the send button. */
+.revisions {
+  margin-top: 14px;
+}
+
+.revisions__take {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+}
+
+/* Config loader problems, verbatim: red, and monospace since each starts with a field path. */
+.problems {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font: 12px/1.6 var(--mono);
+  color: var(--danger);
+}
+
+.problems li {
+  padding: 2px 0;
+}
+
+/* ---- the people and the exceptions ----------------------------------------------------------- */
+
+.people,
+.overrides {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people li,
+.overrides li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.people__name,
+.overrides__name {
+  font: 600 13px var(--mono);
+  color: var(--ink);
+}
+
+.people__notes,
+.overrides__note {
+  margin: 3px 0 0;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+/* Narrow screens: the rail and state column stack above the queue instead of squeezing it. */
+@media (max-width: 1100px) {
+  body.console {
+    overflow: auto;
+  }
+
+  /* Height from content, so the page scrolls instead of the grid running under the drawer. */
+  [data-field="operator"] {
+    flex: none;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    overflow: visible;
+  }
+
+  .rail,
+  .stream,
+  .state {
+    overflow: visible;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}

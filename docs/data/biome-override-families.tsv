@@ -1,0 +1,22 @@
+# Override families: a prefix of the raw string, and the tournament biome it means.
+# Compiled into Lms.Core (KnownBiomes); a test asserts this file and the code agree, and that
+# every string in biome-overrides.tsv resolves through one of these rules or the biome table.
+#
+# Matched case-insensitively, longest prefix first, and BEFORE table-name prefixes -- otherwise
+# BloodKelp_Trench would collapse into bloodKelp, which is the mistake this whole mechanism exists
+# to avoid.
+#
+# prefix	tournamentBiome
+BloodKelp_Trench	bloodKelpTrench
+deepGrandReef	deepGrandReef
+ILZ	inactiveLavaZone
+ALZ	activeLavaZone
+Lava	activeLavaZone
+LostRiver_	lostRiver
+JellyshroomCaves	jellyshroomCaves
+EmperorFacility	primaryContainmentFacility
+Prison_	primaryContainmentFacility
+# Reached through an atmosphere prefab rather than the world data. As a
+# prefix it also covers FloatingIslandBelow and the cave teleporter, neither of which any batch
+# points at today -- but a place you can stand on should not depend on that staying true.
+FloatingIsland	floatingIsland

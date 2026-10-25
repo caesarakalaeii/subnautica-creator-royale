@@ -1,0 +1,118 @@
+# Test config: a one-minute cadence that runs the whole squeeze in four minutes, for watching the
+# mechanics on a local session. ./scripts/install-mod installs it by default.
+#
+# It is also a fixture: the C# tests load it by name and assert its values, so do not retune it.
+# Its walls are far too fast for a real match (./scripts/check-zone fails it on purpose); author a
+# tournament from tournament.example.yaml instead. Unknown fields are errors.
+
+match:
+  cycleLength: 60s
+
+  # The 30 s rung of the countdown down to 1 s fits inside the one-minute cycle.
+  warningLead: 30s
+
+  victoryWindow: 10s
+
+zone:
+  damageInterval: 2s
+  fullExposureAt: 150
+
+  colours:
+    now: "#FFD65C"
+    next: "#7CFF5C1A"
+
+  opening:
+    centre: [200, -15, 100]
+    radius: 1400
+    damagePerTick: 1
+
+  # No destination pool: every phase carries its own centre. Each sphere must fit inside the one
+  # before it.
+  phases:
+    - centre: [500, -90, 300]
+      radius: 900
+      shrinkFor: 30s
+      damagePerTick: 3
+
+    - centre: [700, -110, 400]
+      radius: 400
+      shrinkFor: 30s
+      damagePerTick: 8
+
+    # About 91% open water over a seabed 200 m down.
+    - centre: [750, -110, 450]
+      radius: 120
+      shrinkFor: 20s
+      damagePerTick: 20
+
+ring:
+  minRadius: 1
+  maxRadius: 10
+  minLifetime: 4s
+  maxLifetime: 20s
+  placementMargin: 1
+  energyCost: 5
+
+prawn:
+  hurtsPlayers: true
+  clawDamage: 20
+  drillDamage: 0
+  reach: 9
+  minInterval: 800ms
+
+blade:
+  hurtsPlayers: true
+  knifeDamage: 12
+  heatBladeDamage: 20
+  reach: 6
+  minInterval: 250ms
+
+spawn:
+  ownPod: true
+  minSeparation: 400
+  groupSize: 5
+
+  # Deliberately small (pods 59 m apart) so two players can see each other's pods. The server
+  # warns that this is short of minSeparation; that is expected.
+  circleRadius: 50
+
+spectator:
+  deathCam: 5s
+  spectate: true
+  flySpeed: 8
+
+# The token comes from LMS_INGEST_TOKEN on the server.
+telemetry:
+  url: https://sn.caes.ar/ingest
+  interval: 1s
+  timeout: 3s
+  acceptsCommands: true
+
+audit:
+  positionInterval: 5s
+
+disconnect:
+  # Shorter than the 90 s default, which would forgive a whole one-minute phase.
+  grace: 20s
+
+flags:
+  enforceDamage: true
+  showDestination: false
+  enforceContainment: true
+  hideBeacons: true
+
+# A local session is rarely a full group: use lms round force.
+start:
+  # Shorter than the 30 s default.
+  hold: 10s
+  fieldRadius: 12
+  kit: []
+  lockedRecipes:
+    - Seamoth
+    - Exosuit
+    - Cyclops
+  recipes:
+    - all
+
+medkit:
+  cooldown: 30s

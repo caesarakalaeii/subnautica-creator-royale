@@ -1,0 +1,43 @@
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+[Dd]ebug/
+[Rr]elease/
+
+# Go
+/backend/dist/
+*.test
+coverage.out
+
+# Nix
+result
+result-*
+
+# Nitrox checkout and local paths
+nitrox/
+local.props
+*.local.json
+
+# Editors
+.idea/
+.vs/
+.vscode/
+*.swp
+
+# Packages
+/dist/
+
+# Archives
+*.zip
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Staged into the docker build context
+backend/telemetry-example.json
+
+# Claude Code
+.claude/

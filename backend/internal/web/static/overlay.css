@@ -1,0 +1,407 @@
+/*
+ * OBS overlay styles. The background is transparent, and translucent backdrops and text shadows
+ * keep everything legible over both bright and dark gameplay.
+ *
+ * Each panel draws at the top left of its source at natural size; OBS positions and scales it.
+ */
+
+:root {
+  /* Same variable names as the dashboard, with broadcast-tuned values. */
+  --phosphor: #22d3ee;
+  --kelp: #34d399;
+  --amber: #fbbf24;
+  --coral: #f87171;
+  --bone: #f2f4f8;
+  --ash: #9aa3b5;
+  --ghost: #5c6478;
+
+  --scrim: #08080d99;
+  --scrim-solid: #08080de6;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", "Cascadia Mono", Menlo,
+    Consolas, "DejaVu Sans Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  /* Transparent: OBS composites this over the game capture. */
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  font: 400 15px/1.35 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--bone);
+  -webkit-font-smoothing: antialiased;
+
+  /* Nothing is interactive; keep cursors and selection highlights off camera. */
+  cursor: none;
+  user-select: none;
+}
+
+/* One page, one panel; every other panel is display: none.
+   A panel's `display` is set only here: a class rule like `.strip` would outrank `body > section`
+   and show every panel at once. */
+body > section,
+body > ol {
+  display: none;
+}
+
+body[data-panel="status"] .strip,
+body[data-panel="toasts"] .toasts {
+  display: flex;
+}
+
+body[data-panel="board"] .board,
+body[data-panel="table"] .board--table,
+body[data-panel="map"] .map,
+body[data-panel="setup"] .setup {
+  display: block;
+}
+
+/* Board and table both carry `.board`, so hide the one not asked for. More specific than the block
+   above. */
+body[data-panel="board"] .board--table,
+body[data-panel="table"] .board:not(.board--table) {
+  display: none;
+}
+
+/* With no match running, panels show nothing. The setup card is exempt so a misconfigured source is
+   visible before a match. Specific enough to override the rules above. */
+body[data-showing="no"] > section:not(.setup):not(.map),
+body[data-showing="no"] > ol {
+  display: none;
+}
+
+/* The map is made transparent rather than removed: `map3d.js` sizes the renderer from this box, which
+   must stay laid out. The solid map renders on demand, so this costs nothing. */
+body[data-showing="no"] > .map {
+  opacity: 0;
+}
+
+/* ---- the status strip ------------------------------------------------------------------ */
+
+.strip {
+  position: relative;
+  align-items: stretch;
+  gap: 1px;
+  width: max-content;
+  background: #0c202c99;
+  border: 1px solid #5fe3f033;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 26px #0009;
+}
+
+.strip__cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 18px 11px;
+  background: var(--scrim);
+  min-width: 96px;
+}
+
+.strip__label {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ash);
+  text-shadow: 0 1px 3px #000;
+}
+
+.strip__value {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--bone);
+  text-shadow: 0 2px 6px #000c;
+}
+
+.strip__cell--alive .strip__value {
+  color: var(--kelp);
+  font-size: 30px;
+}
+
+.strip__cell--next .strip__value {
+  color: var(--phosphor);
+}
+
+/* The last minute of a phase. */
+.strip__cell--next[data-soon="true"] .strip__value {
+  color: var(--amber);
+}
+
+.strip__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #0a1a2466;
+}
+
+.strip__rule > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--phosphor);
+  box-shadow: 0 0 10px var(--phosphor);
+  transition: width 1s linear;
+}
+
+/* ---- the elimination cards ------------------------------------------------------------- */
+
+.toasts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 12px 16px;
+  background: var(--scrim-solid);
+  border-left: 4px solid var(--coral);
+  box-shadow: 0 8px 30px #000b;
+  font-size: 19px;
+  white-space: nowrap;
+
+  /* Entry only; cards are removed as soon as the queue drops them. */
+  animation: arrive 320ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.toast__mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 12px var(--coral);
+  flex: none;
+}
+
+.toast[data-kind="won"] {
+  border-left-color: var(--phosphor);
+  font-size: 26px;
+  letter-spacing: 0.03em;
+  padding: 16px 26px 16px 20px;
+}
+
+.toast[data-kind="won"] .toast__mark {
+  background: var(--phosphor);
+  box-shadow: 0 0 16px var(--phosphor);
+}
+
+.toast[data-kind="won"] .toast__text {
+  color: var(--phosphor);
+}
+
+.toast__text {
+  text-shadow: 0 2px 6px #000c;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+/* ---- the board ------------------------------------------------------------------------- */
+
+.board {
+  width: max-content;
+  background: var(--scrim-solid);
+  border: 1px solid #5fe3f033;
+  box-shadow: 0 8px 30px #000b;
+}
+
+.board table {
+  border-collapse: collapse;
+}
+
+.board th {
+  padding: 8px 14px 7px;
+  text-align: left;
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ash);
+  border-bottom: 1px solid #5fe3f033;
+  white-space: nowrap;
+}
+
+.board td {
+  padding: 5px 14px;
+  white-space: nowrap;
+  border-bottom: 1px solid #ffffff0f;
+  text-shadow: 0 1px 4px #000c;
+}
+
+.board__place,
+.board__num {
+  text-align: right;
+}
+
+.board td.board__place {
+  color: var(--ghost);
+  width: 34px;
+}
+
+.board td.board__points {
+  color: var(--phosphor);
+}
+
+.board tr[data-alive="false"] td {
+  color: var(--ghost);
+}
+
+.board tr[data-alive="false"] .board__name {
+  text-decoration: line-through;
+  text-decoration-color: #ffffff33;
+}
+
+/* Whoever is holding first place on their own. */
+.board tr[data-lead="true"] .board__name {
+  color: var(--kelp);
+}
+
+.board__name {
+  color: var(--bone);
+}
+
+/* How a player went out: dim, small, left-aligned text. */
+.board__cause {
+  color: var(--ash);
+  font-size: 0.82em;
+  text-align: left;
+  padding-left: 10px;
+  white-space: nowrap;
+}
+
+/* ---- the tournament table -------------------------------------------------------------- */
+
+/* Padded like the cells so the caption reads as the table's heading. */
+.board__caption {
+  margin: 0;
+  padding: 8px 14px 7px;
+  color: var(--ash);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #5fe3f033;
+}
+
+/* A tied place is prefixed with "=". */
+.board--table tr[data-shared="true"] .board__place::before {
+  content: "=";
+  opacity: 0.55;
+}
+
+/* ---- the map --------------------------------------------------------------------------- */
+
+/* The only panel that fills its source. Fixed rather than in flow, because the canvas is sized from
+   this box and must not size it in turn. */
+.map {
+  position: fixed;
+  inset: 0;
+}
+
+.map canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- the setup card -------------------------------------------------------------------- */
+
+.setup {
+  max-width: 62ch;
+  margin: 18px;
+  padding: 22px 26px;
+  background: var(--scrim-solid);
+  border: 1px solid #5fe3f033;
+  cursor: auto;
+  user-select: text;
+}
+
+.setup h1 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--phosphor);
+}
+
+.setup p {
+  margin: 0 0 14px;
+  color: var(--ash);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.setup ul {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.setup li {
+  padding: 4px 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.setup li b {
+  color: var(--phosphor);
+  font-weight: 400;
+}
+
+.setup__link b {
+  color: var(--bone);
+  font-weight: 400;
+}
+
+html[data-link="live"] .setup__link b {
+  color: var(--kelp);
+}
+
+html[data-link="refused"] .setup__link b,
+html[data-link="blocked"] .setup__link b,
+html[data-link="mismatched"] .setup__link b {
+  color: var(--coral);
+}
+
+/* The AGPL §13 source offer, shown only on the setup card. */
+.setup__source {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ash);
+  opacity: 0.7;
+}
+
+.setup__source a {
+  color: inherit;
+}

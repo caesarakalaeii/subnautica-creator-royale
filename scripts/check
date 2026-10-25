@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Runs every test that does not need a Subnautica install.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "==> dotnet test"
+dotnet test --configuration Release
+
+echo "==> python"
+python3 -m unittest discover --start-directory scripts/tests --quiet
+./scripts/check-zone --self-test
+
+echo "==> go vet && go test"
+(cd backend && go vet ./... && go test -race ./...)
+
+echo "==> node --test"
+node --test backend/internal/web/tests/*.test.js
+
+echo "all checks passed"

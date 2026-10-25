@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""Extracts the per-batch biome override strings from an installed Subnautica.
+
+`LargeWorldStreamer.GetOverrideBiome` reads `overrideBiome`, a protobuf string on the
+`LargeWorldBatchRoot` serialised into each BatchObjectsCache file (one per batch).
+
+A batch root's atmosphere prefab (field 12) overrides that string at load
+(`PullSettingsFromPrefab`), and the prefab's value lives in an addressable bundle that cannot be
+read here, so the prefabs are listed separately in biome-override-prefabs.tsv.
+
+Each override is cross-referenced against `biomeMap.bin`, the 2D 1024x1024 grid (4 m per cell)
+`GetBiome` falls back on; being 2D, it reports deep biomes as whatever lies above them.
+
+Writes docs/data/biome-overrides.tsv. Its `tournamentBiome` column is authored: preserved on
+rewrite, and missing mappings are flagged.
+
+usage: ./scripts/extract-biome-data [SUBNAUTICA_INSTALL]
+"""
+import collections
+import pathlib
+import re
+import sys
+
+MARKER = b"LargeWorldBatchRoot"
+NAME = re.compile(rb"^[A-Za-z][A-Za-z0-9_]*$")
+# Field 12 (0x62), a 36-byte (0x24) class id. The GUID shape avoids false matches on other fields.
+CLASS_ID = re.compile(rb"\x62\x24([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+ATMOSPHERE = "WorldEntities/Atmosphere/"
+CELL_METRES, BATCH_METRES, GRID_SIDE = 4, 160, 1024
+CELLS_PER_BATCH = BATCH_METRES // CELL_METRES
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+OUTPUT = REPO / "docs/data/biome-overrides.tsv"
+PREFAB_OUTPUT = REPO / "docs/data/biome-override-prefabs.tsv"
+DEFAULT_INSTALL = pathlib.Path.home() / ".local/share/Steam/steamapps/common/Subnautica"
+
+
+def build_dir(install: pathlib.Path) -> pathlib.Path:
+    build = install / "Subnautica_Data/StreamingAssets/SNUnmanagedData/Build18"
+    if not (build / "biomeMap.bin").exists():
+        sys.exit(f"No Subnautica world data under {install} (looked for {build})")
+    return build
+
+
+def read_batches(build: pathlib.Path):
+    """Yields (batch, literal override string, atmosphere prefab class id); either may be None.
+
+    When both are present the prefab wins: PullSettingsFromPrefab assigns over the literal.
+    """
+    for path in sorted((build / "BatchObjectsCache").glob("batch-objects-*.bin")):
+        data = path.read_bytes()
+        at = data.find(MARKER)
+        if at < 0:
+            continue
+
+        literal = None
+        window = data[at + len(MARKER): at + len(MARKER) + 16]
+        tag = window.find(b"\x12")               # protobuf field 2, length-delimited
+        if tag >= 0 and window[tag + 1] != 0:    # \x12\x00 -- no override on this batch
+            raw = data[at + len(MARKER) + tag + 2:][:window[tag + 1]]
+            if NAME.match(raw):
+                literal = raw.decode("ascii")
+
+        # Not windowed: sub-messages between the two fields can push field 12 hundreds of bytes on.
+        found = CLASS_ID.search(data)
+        class_id = found.group(1).decode() if found else None
+        yield tuple(int(n) for n in path.stem.split("-")[2:]), literal, class_id
+
+
+def prefab_paths(install: pathlib.Path) -> dict[str, str]:
+    """classId -> prefab path, from prefabs.db (what PrefabDatabase resolves against)."""
+    db = (install / "Subnautica_Data/StreamingAssets/SNUnmanagedData/prefabs.db").read_bytes()
+    return {m.group(1).decode(): m.group(2).decode() for m in re.finditer(
+        rb"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}).(WorldEntities/[ -~]{3,120}?\.prefab)", db)}
+
+
+def surface_biomes(build: pathlib.Path, batches, names):
+    grid = (build / "biomeMap.bin").read_bytes()[2:]
+    counts = collections.Counter()
+    for bx, _by, bz in batches:
+        for cx in range(bx * CELLS_PER_BATCH, (bx + 1) * CELLS_PER_BATCH):
+            for cz in range(bz * CELLS_PER_BATCH, (bz + 1) * CELLS_PER_BATCH):
+                if 0 <= cx < GRID_SIDE and 0 <= cz < GRID_SIDE:
+                    value = grid[cz * GRID_SIDE + cx]
+                    counts[names[value] if value < len(names) else f"index{value}"] += 1
+    return counts
+
+
+def existing_mapping(output: pathlib.Path = OUTPUT) -> dict[str, str]:
+    if not output.exists():
+        return {}
+    mapping = {}
+    for line in output.read_text().splitlines():
+        if line and not line.startswith("#"):
+            columns = line.split("\t")
+            if len(columns) >= 2:
+                mapping[columns[0]] = columns[1]
+    return mapping
+
+
+def write_prefabs(prefabs, shadowed) -> int:
+    """Writes the atmosphere prefabs batches pull their biome from; returns how many are unknown."""
+    authored = existing_mapping(PREFAB_OUTPUT)
+    lines = [
+        "# Atmosphere prefabs that batch roots pull their settings from, extracted by",
+        "# scripts/extract-biome-data. LargeWorldBatchRoot.PullSettingsFromPrefab assigns",
+        "# overrideBiome = AtmosphereVolume.overrideBiome, replacing whatever the batch file said.",
+        "#",
+        "# overrideBiome cannot be read here -- the value is inside an addressable bundle -- so it",
+        "# is filled in from what the game itself reported: the `lmsbiomes` console command,",
+        "# whose full output is atmosphere-biomes.tsv. Preserved on rewrite. A dash means the prefab",
+        "# carries no biome of its own, which wipes whatever string the batch file carried.",
+        "# replacesLiteral counts the batches where this prefab overwrites a string that IS in",
+        "# biome-overrides.tsv -- for every one of them, both sources name the same tournament biome.",
+        "#",
+        "# atmospherePrefab\toverrideBiome\tbatches\treplacesLiteral",
+    ]
+    unknown = 0
+    for path in sorted(prefabs):
+        biome = authored.get(path) or "UNKNOWN"
+        unknown += biome == "UNKNOWN"
+        lines.append(f"{path}\t{biome}\t{len(prefabs[path])}\t{shadowed[path]}")
+    PREFAB_OUTPUT.write_text("\n".join(lines) + "\n")
+    return unknown
+
+
+def main() -> int:
+    install = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_INSTALL
+    build = build_dir(install)
+    names = [l.strip() for l in (build / "biomes.csv").read_text().splitlines()[1:] if l.strip()]
+
+    paths = prefab_paths(install)
+    overrides: dict[str, list[tuple[int, int, int]]] = collections.defaultdict(list)
+    prefabs: dict[str, list[tuple[int, int, int]]] = collections.defaultdict(list)
+    shadowed: collections.Counter = collections.Counter()
+    for index, literal, class_id in read_batches(build):
+        if literal:
+            overrides[literal].append(index)
+        prefab = paths.get(class_id or "", "")
+        if prefab.startswith(ATMOSPHERE):
+            prefabs[prefab].append(index)
+            if literal:
+                shadowed[prefab] += 1
+
+    authored = existing_mapping()
+    unmapped = []
+
+    lines = [
+        "# Every per-batch biome override string in the installed world data, extracted by",
+        "# scripts/extract-biome-data. See docs/data/README.md.",
+        "#",
+        "# tournamentBiome is AUTHORED, not generated -- it is the mapping the resolver applies.",
+        "# surfaceBiome is what biomes.csv says above these batches, and is mostly a reminder that",
+        "# the biome map is 2D: the Lava Zone's surface biome is the Safe Shallows.",
+        "#",
+        "# overrideString\ttournamentBiome\tbatches\tsurfaceBiome",
+    ]
+    for name in sorted(overrides):
+        mapped = authored.get(name, "")
+        if not mapped:
+            unmapped.append(name)
+            mapped = "UNMAPPED"
+        top = surface_biomes(build, overrides[name], names).most_common(1)
+        lines.append(f"{name}\t{mapped}\t{len(overrides[name])}\t{top[0][0] if top else '-'}")
+
+    OUTPUT.write_text("\n".join(lines) + "\n")
+    print(f"{len(overrides)} distinct override strings across "
+          f"{sum(len(v) for v in overrides.values())} batches -> {OUTPUT.relative_to(REPO)}")
+
+    unread = write_prefabs(prefabs, shadowed)
+    batches = sum(len(v) for v in prefabs.values())
+    print(f"{len(prefabs)} atmosphere prefabs across {batches} batches -> {PREFAB_OUTPUT.relative_to(REPO)}")
+    print(f"  {sum(shadowed.values())} of those batches also carry a literal, which the prefab replaces at load")
+    print(f"  {unread} prefab biome strings are still unknown -- they cannot be read outside the game")
+
+    if unmapped:
+        print(f"\n{len(unmapped)} string(s) have no tournament biome yet:", ", ".join(unmapped))
+        print("Add the mapping in the second column, and a family rule in biome-override-families.tsv.")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

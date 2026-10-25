@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Builds the Nitrox fork and both halves of the mod, and checks they are deployed and current.
+
+Not part of ./scripts/check: it needs a Subnautica install and the Nitrox fork. Run inside
+`nix develop` (needs a .NET 9+ SDK).
+
+usage: ./scripts/check-game
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+# Build order: the fork first, because the mod resolves its Nitrox assemblies from its outputs.
+BUILDS = [
+    ("fork: NitroxPatcher (net472)", "nitrox/NitroxPatcher/NitroxPatcher.csproj", "net472"),
+    ("fork: Nitrox.Server.Subnautica (net9.0)", "nitrox/Nitrox.Server.Subnautica/Nitrox.Server.Subnautica.csproj", None),
+    ("mod: Lms.Game (net472)", "src/Lms.Game/Lms.Game.csproj", None),
+    ("mod: Lms.Server (net9.0)", "src/Lms.Server/Lms.Server.csproj", None),
+]
+
+# Where each half must be deployed. Missing directories are skipped: ./scripts/install-mod builds
+# the launcher ones.
+DEPLOYED = [
+    ("nitrox/NitroxPatcher/bin/Release/net472", ["Lms.Game.dll", "Lms.Core.dll"]),
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/lib/net472", ["Lms.Game.dll", "Lms.Core.dll"]),
+    ("nitrox/Nitrox.Server.Subnautica/bin/Release/net9.0/lib",
+     ["Lms.Server.dll", "Lms.Core.dll", "YamlDotNet.dll"]),
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/lib", ["Lms.Server.dll", "Lms.Core.dll", "YamlDotNet.dll"]),
+]
+
+
+# Sources of the fork's added types; each file name is its type name.
+FORK_TYPE_SOURCES = ["Nitrox.Model.Subnautica/Tournament/*.cs", "Nitrox.Model.Subnautica/Packets/Lms*.cs"]
+
+# Assembled by ./scripts/install-mod, not this script, so they can hold Nitrox assemblies older
+# than the mod, which then fails with a TypeLoadException. Checked by type name, not by bytes:
+# the launcher compiles its own copies.
+LAUNCHER_DIRS = [
+    "nitrox/Nitrox.Launcher/bin/Release/net9.0/lib",
+    "nitrox/Nitrox.Launcher/bin/Release/net9.0/lib/net472",
+]
+
+# Each assembly the launcher loads must be newer than its sources, which also catches fork changes
+# that add no type. Compared by mtime: editing a source always moves it, so a launcher behind the
+# tree never passes.
+LAUNCHER_FRESHNESS = [
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/Nitrox.Server.Subnautica.dll",
+     ["nitrox/Nitrox.Server.Subnautica", "nitrox/Nitrox.Model.Subnautica", "nitrox/Nitrox.Model"]),
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/lib/net472/NitroxPatcher.dll",
+     ["nitrox/NitroxPatcher", "nitrox/NitroxClient"]),
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/lib/net472/Lms.Game.dll",
+     ["src/Lms.Game", "src/Lms.Core"]),
+    ("nitrox/Nitrox.Launcher/bin/Release/net9.0/lib/Lms.Server.dll",
+     ["src/Lms.Server", "src/Lms.Core"]),
+]
+
+
+def die(message: str) -> None:
+    print(message, file=sys.stderr)
+    raise SystemExit(1)
+
+
+def run(*command: str) -> None:
+    if subprocess.run(command, cwd=ROOT).returncode != 0:
+        die(f"failed: {' '.join(command)}")
+
+
+def major_version(sdk_line: str) -> int:
+    """`dotnet --list-sdks` prints `10.0.400 [/path]`, one per line."""
+    head = sdk_line.split(".", 1)[0].strip()
+    return int(head) if head.isdigit() else 0
+
+
+def check_sdk() -> None:
+    """Fails early if no .NET 9+ SDK is on PATH."""
+    sdks = subprocess.run(["dotnet", "--list-sdks"], cwd=ROOT, capture_output=True, text=True).stdout
+    if not any(major_version(line) >= 9 for line in sdks.splitlines()):
+        die("no .NET 9 or newer SDK on PATH -- run this inside `nix develop`.\n"
+            f"Found:\n{sdks or '  nothing'}")
+
+
+def fork_types() -> list[str]:
+    """The type names the fork adds to Nitrox.Model.Subnautica."""
+    names = []
+    for pattern in FORK_TYPE_SOURCES:
+        names += [path.stem for path in sorted((ROOT / "nitrox").glob(pattern))]
+
+    return names
+
+
+def check_launcher_knows_the_fork() -> None:
+    """Fails if a launcher's Nitrox.Model.Subnautica.dll lacks any of the fork's types."""
+    wanted = fork_types()
+    if not wanted:
+        die("no fork types found under nitrox/ -- has the patch series been applied?")
+
+    for directory in LAUNCHER_DIRS:
+        assembly = ROOT / directory / "Nitrox.Model.Subnautica.dll"
+        if not assembly.is_file():
+            continue
+
+        compiled = assembly.read_bytes()
+        missing = [name for name in wanted if name.encode() not in compiled]
+        if missing:
+            die(f"{directory}/Nitrox.Model.Subnautica.dll was built before the fork grew "
+                f"{', '.join(missing)}.\n\n"
+                "The mod is deployed beside it and binds to those types, so the server would load "
+                "it and\ndie with a TypeLoadException -- reported as 'failed to load; running as "
+                "stock Nitrox'.\nRun ./scripts/install-mod, which is what assembles the launcher's "
+                "lib and lib/net472.")
+
+    print(f"==> launcher: its Nitrox assemblies carry all {len(wanted)} fork types")
+
+
+def newest_source(directory: Path) -> tuple[Path, float] | None:
+    """The most recently edited C# file under a directory, ignoring build output."""
+    newest = None
+
+    for path in directory.rglob("*.cs"):
+        # obj/ holds generated sources whose mtime moves on every build.
+        if "obj" in path.parts or "bin" in path.parts:
+            continue
+
+        stamp = path.stat().st_mtime
+        if newest is None or stamp > newest[1]:
+            newest = (path, stamp)
+
+    return newest
+
+
+def check_launcher_is_current() -> None:
+    """Fails if any assembly in LAUNCHER_FRESHNESS is older than its newest source."""
+    checked = 0
+
+    for assembly, sources in LAUNCHER_FRESHNESS:
+        built = ROOT / assembly
+        if not built.is_file():
+            # install-mod has not been run yet.
+            continue
+
+        checked += 1
+        stamp = built.stat().st_mtime
+
+        for source in sources:
+            directory = ROOT / source
+            if not directory.is_dir():
+                continue
+
+            newest = newest_source(directory)
+            if newest is not None and newest[1] > stamp:
+                die(f"{assembly}\nwas built before {newest[0].relative_to(ROOT)} was last edited, "
+                    f"so the launcher would run different code from the one this gate just built.\n\n"
+                    "Run ./scripts/install-mod, which is what assembles the launcher.")
+
+    if checked:
+        print(f"==> launcher: all {checked} assemblies it loads are newer than their sources")
+
+
+def main() -> None:
+    if not (ROOT / "nitrox" / ".git").is_dir():
+        die("no Nitrox fork at ./nitrox -- run ./scripts/nitrox-fork first")
+
+    check_sdk()
+
+    for label, project, framework in BUILDS:
+        print(f"==> {label}")
+        run("dotnet", "build", project, *(("-f", framework) if framework else ()),
+            "-c", "Release", "-v", "q", "--nologo")
+
+    for directory, files in DEPLOYED:
+        if not (ROOT / directory).is_dir():
+            continue
+        for name in files:
+            if not (ROOT / directory / name).is_file():
+                die(f"{name} is missing from {directory} -- Nitrox would load without it")
+
+    check_launcher_knows_the_fork()
+    check_launcher_is_current()
+
+    print("==> terrain: octree reader agrees with the install")
+    run("./scripts/check-zone", "--self-test")
+
+    print("==> zone: the example squeeze has water in it")
+    run("./scripts/check-zone", "docs/config/tournament.example.yaml")
+
+    print("game side built and deployed")
+
+
+if __name__ == "__main__":
+    main()

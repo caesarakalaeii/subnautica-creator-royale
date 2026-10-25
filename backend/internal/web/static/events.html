@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Last Man Standing · events</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/bracket.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="bracket">
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__mark" aria-hidden="true"></span>
+        <span class="bar__title">last man standing</span>
+        <span class="bar__sub">the archive</span>
+      </div>
+
+      <div class="link" data-field="link" role="status" aria-live="polite">
+        <span class="link__dot" aria-hidden="true"></span>
+        <span class="link__text">loading</span>
+      </div>
+    </header>
+
+    <!-- Page tabs. Relative hrefs keep navigation inside the current booth (`/b/{booth}/`). -->
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html">home</a>
+      <a class="tabs__tab" href="tournament.html">tournament</a>
+      <a class="tabs__tab" href="index.html">view</a>
+      <a class="tabs__tab" href="bracket.html">bracket</a>
+      <a class="tabs__tab" href="console.html">operator</a>
+      <a class="tabs__tab" href="events.html" aria-current="page">events</a>
+    </nav>
+
+    <main class="sheet">
+      <!-- The full event archive (the dashboard shows only the newest ten): every line the booth's
+           window holds, newest first, live. Needs the view token, kept in browser storage; a
+           `?token=` link is stripped from the address bar. -->
+      <section class="panel" aria-labelledby="view-heading">
+        <h2 class="panel__head" id="view-heading">view token</h2>
+
+        <label class="field">
+          <span class="field__label">the booth's view token, the same one the dashboard takes</span>
+          <input type="password" data-field="viewToken" autocomplete="off" spellcheck="false" />
+        </label>
+      </section>
+
+      <section class="panel" aria-labelledby="events-heading">
+        <h2 class="panel__head" id="events-heading">events</h2>
+
+        <div class="feed" aria-label="what has happened">
+          <header class="feed__head">
+            <span class="feed__title">feed</span>
+            <span class="feed__count" data-field="feedCount"></span>
+          </header>
+
+          <ol class="feed__list" data-field="feedList"></ol>
+
+          <p class="feed__empty" data-field="feedEmpty" hidden>
+            Nothing has happened yet. The match's own lifecycle, arrivals, departures and
+            eliminations land here as the server writes them.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <script type="module" src="/events-page.js"></script>
+  </body>
+</html>

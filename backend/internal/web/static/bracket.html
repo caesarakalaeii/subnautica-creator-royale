@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Last Man Standing · bracket</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/bracket.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="bracket">
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__mark" aria-hidden="true"></span>
+        <span class="bar__title">last man standing</span>
+        <span class="bar__sub" data-field="caption">loading</span>
+      </div>
+
+      <div class="link" data-field="link" role="status" aria-live="polite">
+        <span class="link__dot" aria-hidden="true"></span>
+        <span class="link__text">loading</span>
+      </div>
+    </header>
+
+    <!-- Page tabs. Relative hrefs keep navigation inside the current booth (`/b/{booth}/`). -->
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html">home</a>
+      <a class="tabs__tab" href="tournament.html">tournament</a>
+      <a class="tabs__tab" href="index.html">view</a>
+      <a class="tabs__tab" href="bracket.html" aria-current="page">bracket</a>
+      <a class="tabs__tab" href="console.html">operator</a>
+      <a class="tabs__tab" href="events.html">events</a>
+    </nav>
+
+    <main class="sheet">
+      <!-- The view token, needed unless the bracket has been published (then this box is hidden).
+           Kept in browser storage; a `?token=` link is stripped from the address bar. -->
+      <section class="panel" aria-labelledby="view-heading" data-field="viewPanel">
+        <h2 class="panel__head" id="view-heading">view token</h2>
+
+        <label class="field">
+          <span class="field__label">the booth's view token, the same one the dashboard takes</span>
+          <input type="password" data-field="viewToken" autocomplete="off" spellcheck="false" />
+        </label>
+      </section>
+
+      <!-- Database status, so a missing database is not mistaken for an empty bracket. -->
+      <p class="note" data-field="records" role="status" hidden></p>
+
+      <section class="panel" aria-labelledby="standings-heading">
+        <h2 class="panel__head" id="standings-heading">standings</h2>
+
+        <table class="table" data-field="standingsTable">
+          <thead>
+            <tr>
+              <th scope="col" class="table__place">#</th>
+              <th scope="col">player</th>
+              <th scope="col" class="table__number">points</th>
+              <th scope="col" class="table__number">played</th>
+              <th scope="col" class="table__number">wins</th>
+              <th scope="col" class="table__number">best</th>
+              <th scope="col" class="table__number">outlasted</th>
+              <!-- Two kill columns: kills read from the log, and kills attributed afterwards. -->
+              <th scope="col" class="table__number">kills</th>
+              <th scope="col" class="table__number">attributed</th>
+              <!-- Points the operators gave or took, for a reason the scoring cannot express. -->
+              <th scope="col" class="table__number">adjusted</th>
+            </tr>
+          </thead>
+          <tbody data-field="standings"></tbody>
+        </table>
+
+        <p class="empty" data-field="standingsEmpty">no match has finished yet</p>
+      </section>
+
+      <section class="panel" aria-labelledby="groups-heading">
+        <h2 class="panel__head" id="groups-heading">groups</h2>
+        <div class="cards" data-field="groups"></div>
+        <p class="empty" data-field="groupsEmpty">the bracket has not been written yet</p>
+      </section>
+
+      <!-- The operator panel. Needs the operator token (the view token cannot write), kept in
+           browser storage rather than the address bar. -->
+      <section class="panel panel--operator" aria-labelledby="operator-heading">
+        <h2 class="panel__head" id="operator-heading">
+          <button type="button" class="disclose" data-field="operatorToggle" aria-expanded="false">
+            operator
+          </button>
+        </h2>
+
+        <div class="operator" data-field="operator" hidden>
+          <label class="field">
+            <span class="field__label">operator token</span>
+            <input type="password" data-field="token" autocomplete="off" spellcheck="false" />
+          </label>
+
+          <form class="attribute" data-field="attributeForm">
+            <h3 class="operator__head">attribute a kill</h3>
+
+            <div class="attribute__row">
+              <label class="field">
+                <span class="field__label">group</span>
+                <input type="number" min="1" data-field="group" required />
+              </label>
+
+              <label class="field">
+                <span class="field__label">attempt</span>
+                <input type="number" min="1" value="1" data-field="generation" required />
+              </label>
+
+              <label class="field">
+                <span class="field__label">victim</span>
+                <input type="text" list="known-players" data-field="victim" required
+                  spellcheck="false" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">killer</span>
+                <input type="text" list="known-players" data-field="actor" spellcheck="false"
+                  placeholder="nobody" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">said by</span>
+                <input type="text" data-field="by" required spellcheck="false" />
+              </label>
+
+              <button type="submit" class="go" data-field="attribute">write it</button>
+            </div>
+
+            <!-- The match is chosen explicitly, so a kill can be attributed to an earlier group later
+                 (e.g. after reviewing a VOD). -->
+            <p class="hint">
+              The match is named here, not taken from whatever is running. Leave the killer empty to
+              take a kill back — nothing is ever edited, so a correction is another row and the last
+              one wins.
+            </p>
+          </form>
+
+          <form class="attribute" data-field="adjustForm">
+            <h3 class="operator__head">adjust points</h3>
+
+            <div class="attribute__row">
+              <label class="field">
+                <span class="field__label">game</span>
+                <input type="number" min="1" data-field="adjustGroup" required />
+              </label>
+
+              <label class="field">
+                <span class="field__label">player</span>
+                <input type="text" list="known-players" data-field="adjustPlayer" required
+                  spellcheck="false" />
+              </label>
+
+              <label class="field">
+                <span class="field__label">points</span>
+                <input type="number" data-field="adjustPoints" required />
+              </label>
+
+              <label class="field">
+                <span class="field__label">reason</span>
+                <input type="text" data-field="adjustReason" required />
+              </label>
+
+              <button type="submit" class="go" data-field="adjust">write it</button>
+            </div>
+
+            <!-- Point adjustments for what the scoring cannot express, e.g. a death the game caused.
+                 Signed by "said by" above, and append-only. -->
+            <p class="hint">
+              Points on top of the table, for a reason it cannot score — a death to a bug, say. Uses
+              "said by" above. Nothing is edited: to take one back, write its opposite.
+            </p>
+          </form>
+
+          <form class="attribute" data-field="groupsForm">
+            <h3 class="operator__head">the bracket's shape</h3>
+
+            <!-- One row per group, one box per player, round-tripping `GET /bracket`. The service
+                 validates; the page only checks that a send can succeed. -->
+            <div class="groups" data-field="groupsRows"></div>
+
+            <div class="attribute__row">
+              <button type="button" class="go go--quiet" data-field="addGroup">another group</button>
+            </div>
+
+            <div class="attribute__row">
+              <button type="submit" class="go" data-field="writeGroups">replace the bracket</button>
+              <button type="button" class="go go--quiet" data-field="revertGroups">
+                take mine back
+              </button>
+            </div>
+          </form>
+
+          <!-- The operator console is a separate page, using the same operator token. -->
+          <p class="hint">
+            Running the tournament — the verbs, who is here, and the roster — is on the
+            <a href="console.html">operator console</a>, which takes the same token.
+          </p>
+
+          <p class="said" data-field="said" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <datalist id="known-players" data-field="knownPlayers"></datalist>
+
+    <script type="module" src="/bracket-page.js"></script>
+  </body>
+</html>

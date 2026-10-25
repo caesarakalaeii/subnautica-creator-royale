@@ -1,0 +1,3899 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Caesar <82340152+caesarakalaeii@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 13:05:36 +0100
+Subject: [PATCH] feat: Subnautica Creator Royale tournament support
+
+Loads the tournament mod into the client and server, adds the packets, relays and interfaces the mod and Nitrox share, and the server hooks for pods, game modes, PvP damage, blueprints, ping and large-packet compression.
+---
+ .../GameLogic/RandomStartGenerator.cs         |  24 +-
+ .../Packets/LmsMatchState.cs                  |  24 ++
+ .../Packets/LmsPlayerReport.cs                |  24 ++
+ .../Tournament/ILmsGameMode.cs                |  33 ++
+ .../Tournament/ILmsPodSeating.cs              |  60 +++
+ .../Tournament/ILmsSpawnPlacement.cs          |  24 ++
+ .../Tournament/ILmsTournamentHost.cs          |  23 ++
+ .../Tournament/LmsCombat.cs                   |  23 ++
+ .../Tournament/LmsGameModes.cs                |  14 +
+ .../Tournament/LmsMatchStateRelay.cs          |  22 ++
+ .../Tournament/LmsNetwork.cs                  |  35 ++
+ .../Tournament/LmsPlayerMode.cs               |  28 ++
+ .../Tournament/LmsPlayerReading.cs            |  53 +++
+ .../Tournament/LmsPlayerReportRelay.cs        |  23 ++
+ Nitrox.Model.Subnautica/Tournament/LmsPod.cs  |  43 ++
+ .../Tournament/LmsPodWrecks.cs                |  57 +++
+ Nitrox.Model.Subnautica/Tournament/LmsPods.cs |  13 +
+ .../Tournament/LmsPreferences.cs              |  97 +++++
+ .../Tournament/LmsReporting.cs                |  24 ++
+ .../Tournament/LmsRoster.cs                   |  27 ++
+ .../Tournament/LmsSpawn.cs                    |  14 +
+ Nitrox.Model/Networking/PacketFrame.cs        | 109 +++++
+ .../Models/Commands/LmsCommand.cs             |  33 ++
+ .../Models/Commands/LmsPhantomPodsCommand.cs  | 113 ++++++
+ .../Models/Commands/PvpCommand.cs             |   9 +
+ .../Communication/LiteNetLibConnection.cs     |   6 +-
+ .../Models/Communication/LiteNetLibServer.cs  |  18 +-
+ .../Entities/Spawning/BatchEntitySpawner.cs   |  15 +-
+ .../Models/GameLogic/EscapePodManager.cs      | 128 +++++-
+ .../Models/GameLogic/JoiningManager.cs        |   2 +-
+ .../Models/GameLogic/LmsGameMode.cs           |  67 ++++
+ .../Models/GameLogic/LmsPodSeating.cs         | 159 ++++++++
+ .../Models/GameLogic/LmsTournament.cs         | 239 +++++++++++
+ .../GameLogic/Unlockables/PDAStateData.cs     | 141 ++-----
+ .../Unlockables/PlayerPDAProgress.cs          | 137 +++++++
+ .../Processors/KnownTechEntryAddProcessor.cs  |  16 +-
+ .../Processors/LmsPlayerReportProcessor.cs    |  20 +
+ .../PDAEncyclopediaEntryAddProcessor.cs       |  11 +-
+ .../PDAScanFinishedPacketProcessor.cs         |  16 +-
+ .../Processors/PlayerSyncFinishedProcessor.cs |   8 +-
+ .../Packets/Processors/PvPAttackProcessor.cs  |   6 +
+ .../Serialization/World/WorldPersistence.cs   |   6 +-
+ Nitrox.Server.Subnautica/Server.cs            |  30 +-
+ .../SubnauticaServerAutoFacRegistrar.cs       |   4 +
+ .../Model/Networking/PacketFrameTest.cs       |  80 ++++
+ .../Serialization/WorldPersistenceTest.cs     |  20 +-
+ .../LiteNetLib/LiteNetLibClient.cs            |  32 +-
+ .../Processors/LmsMatchStateProcessor.cs      |  20 +
+ .../Processors/PDAScanFinishedProcessor.cs    |  27 +-
+ .../Processors/SpawnEntitiesProcessor.cs      |  10 +
+ NitroxClient/GameLogic/CellTiming.cs          | 373 ++++++++++++++++++
+ .../PlayerPreferencesInitialSyncProcessor.cs  |   8 +
+ .../Spawning/EscapePodEntitySpawner.cs        |  96 ++++-
+ .../Processor/EscapePodMetadataProcessor.cs   |   7 +
+ NitroxClient/GameLogic/Terrain.cs             |  21 +
+ NitroxClient/MonoBehaviours/LmsPodWreck.cs    |  14 +
+ NitroxPatcher/LmsHook.cs                      | 133 +++++++
+ NitroxPatcher/LmsSettings.cs                  | 103 +++++
+ NitroxPatcher/Patcher.cs                      |   3 +
+ .../uGUI_SceneIntro_IntroSequence_Patch.cs    |   3 +
+ .../uGUI_OptionsPanel_AddTabs_Patch.cs        |   4 +
+ 61 files changed, 2725 insertions(+), 207 deletions(-)
+ create mode 100644 Nitrox.Model.Subnautica/Packets/LmsMatchState.cs
+ create mode 100644 Nitrox.Model.Subnautica/Packets/LmsPlayerReport.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/ILmsGameMode.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/ILmsPodSeating.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/ILmsSpawnPlacement.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/ILmsTournamentHost.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsCombat.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsGameModes.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsMatchStateRelay.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsNetwork.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPlayerMode.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPlayerReading.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPlayerReportRelay.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPod.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPodWrecks.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPods.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsPreferences.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsReporting.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsRoster.cs
+ create mode 100644 Nitrox.Model.Subnautica/Tournament/LmsSpawn.cs
+ create mode 100644 Nitrox.Model/Networking/PacketFrame.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/Commands/LmsCommand.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/Commands/LmsPhantomPodsCommand.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/GameLogic/LmsGameMode.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/GameLogic/LmsPodSeating.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/GameLogic/LmsTournament.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PlayerPDAProgress.cs
+ create mode 100644 Nitrox.Server.Subnautica/Models/Packets/Processors/LmsPlayerReportProcessor.cs
+ create mode 100644 Nitrox.Test/Model/Networking/PacketFrameTest.cs
+ create mode 100644 NitroxClient/Communication/Packets/Processors/LmsMatchStateProcessor.cs
+ create mode 100644 NitroxClient/GameLogic/CellTiming.cs
+ create mode 100644 NitroxClient/MonoBehaviours/LmsPodWreck.cs
+ create mode 100644 NitroxPatcher/LmsHook.cs
+ create mode 100644 NitroxPatcher/LmsSettings.cs
+
+diff --git a/Nitrox.Model.Subnautica/DataStructures/GameLogic/RandomStartGenerator.cs b/Nitrox.Model.Subnautica/DataStructures/GameLogic/RandomStartGenerator.cs
+index e063617..637b960 100644
+--- a/Nitrox.Model.Subnautica/DataStructures/GameLogic/RandomStartGenerator.cs
++++ b/Nitrox.Model.Subnautica/DataStructures/GameLogic/RandomStartGenerator.cs
+@@ -31,9 +31,31 @@ public class RandomStartGenerator
+         return NitroxVector3.Zero;
+     }
+ 
++    /// <summary>
++    ///     A stable FNV-1a hash of a world seed, for seeding <see cref="Random"/> with.
++    /// </summary>
++    /// <remarks>
++    ///     <c>string.GetHashCode()</c> is randomised per process on .NET Core, so it would lay out
++    ///     escape pods differently on every server start.
++    /// </remarks>
++    public static int SeedOf(string seed)
++    {
++        unchecked
++        {
++            uint hash = 2166136261;
++
++            foreach (char character in seed ?? string.Empty)
++            {
++                hash = (hash ^ character) * 16777619;
++            }
++
++            return (int)hash;
++        }
++    }
++
+     public List<NitroxVector3> GenerateRandomStartPositions(string seed)
+     {
+-        Random rnd = new(seed.GetHashCode());
++        Random rnd = new(SeedOf(seed));
+         List<NitroxVector3> list = new();
+ 
+         for (int i = 0; i < 1000; i++)
+diff --git a/Nitrox.Model.Subnautica/Packets/LmsMatchState.cs b/Nitrox.Model.Subnautica/Packets/LmsMatchState.cs
+new file mode 100644
+index 0000000..d61fd69
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Packets/LmsMatchState.cs
+@@ -0,0 +1,24 @@
++using System;
++using Nitrox.Model.Packets;
++
++namespace Nitrox.Model.Subnautica.Packets;
++
++/// <summary>
++///     Server-to-client tournament zone state: the match phase, where the wall is, where it is
++///     closing to and what a tick outside costs.
++/// </summary>
++/// <remarks>
++///     Sent on every change and on a slow heartbeat. The payload is tab-separated <c>key=value</c>
++///     text whose fields belong to the mod, because the mod's assembly cannot be referenced from here.
++///     An empty payload means no tournament is running.
++/// </remarks>
++[Serializable]
++public class LmsMatchState : Packet
++{
++    public string State { get; }
++
++    public LmsMatchState(string state)
++    {
++        State = state;
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Packets/LmsPlayerReport.cs b/Nitrox.Model.Subnautica/Packets/LmsPlayerReport.cs
+new file mode 100644
+index 0000000..4de7091
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Packets/LmsPlayerReport.cs
+@@ -0,0 +1,24 @@
++using System;
++using Nitrox.Model.Packets;
++
++namespace Nitrox.Model.Subnautica.Packets;
++
++/// <summary>
++///     Client-to-server tournament report: the player's biome, vehicle, held item, inventory and
++///     whether the match is finished with them.
++/// </summary>
++/// <remarks>
++///     Carries no sender: the processor stamps it from the authenticated connection, so a client can
++///     only report on itself. The payload is tab-separated <c>key=value</c> text, as in
++///     <see cref="LmsMatchState"/>.
++/// </remarks>
++[Serializable]
++public class LmsPlayerReport : Packet
++{
++    public string Report { get; }
++
++    public LmsPlayerReport(string report)
++    {
++        Report = report;
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/ILmsGameMode.cs b/Nitrox.Model.Subnautica/Tournament/ILmsGameMode.cs
+new file mode 100644
+index 0000000..b8b8754
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/ILmsGameMode.cs
+@@ -0,0 +1,33 @@
++using System.Collections.Generic;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Lets the mod read and correct the game mode the server holds for each player.
++/// </summary>
++/// <remarks>
++///     Nitrox persists a game mode per player and prefers it over <c>server.cfg</c>, so a returning
++///     player can stay in creative, which ignores zone damage. Read off <c>PlayerManager</c>, never
++///     the client. Policy lives in the mod.
++/// </remarks>
++public interface ILmsGameMode
++{
++    /// <summary>
++    ///     Every connected player and the mode the server holds for them.
++    /// </summary>
++    /// <remarks>
++    ///     All connected players, not just contestants: only the mod knows who is a spectator.
++    /// </remarks>
++    IReadOnlyList<LmsPlayerMode> Modes { get; }
++
++    /// <summary>
++    ///     Puts one player into survival and tells every client, exactly as Nitrox's own
++    ///     <c>gamemode</c> command does.
++    /// </summary>
++    /// <remarks>
++    ///     Survival only, so no caller can put a player into creative by accident. The
++    ///     <c>GameModeChanged</c> broadcast is what makes the player mortal on their client.
++    /// </remarks>
++    /// <returns>False when there is no connected player with that id.</returns>
++    bool MakeSurvival(ushort playerId);
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/ILmsPodSeating.cs b/Nitrox.Model.Subnautica/Tournament/ILmsPodSeating.cs
+new file mode 100644
+index 0000000..bf11ec6
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/ILmsPodSeating.cs
+@@ -0,0 +1,60 @@
++using System.Collections.Generic;
++using Nitrox.Model.DataStructures.Unity;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Server-side escape pod operations the mod asks for: list, make, seat and remove.
++/// </summary>
++/// <remarks>
++///     Nitrox assigns a pod only once, on join, so laying a group out again needs the server. Which
++///     player goes where is decided in the mod; nothing here decides anything.
++/// </remarks>
++public interface ILmsPodSeating
++{
++    /// <summary>
++    ///     Every escape pod in the world: where it is, who is assigned to it, and what is in it.
++    /// </summary>
++    IReadOnlyList<LmsPod> Pods { get; }
++
++    /// <summary>
++    ///     The start points the game itself approves of, for a layout that picks between them.
++    /// </summary>
++    /// <remarks>
++    ///     The same list <see cref="ILmsSpawnPlacement.NextPod"/> is handed on a join, available here
++    ///     so a whole group can be re-planned at once.
++    /// </remarks>
++    IReadOnlyList<NitroxVector3> StartPoints { get; }
++
++    /// <summary>
++    ///     Makes an escape pod at this exact position, gives it to <paramref name="ownerId"/>, and
++    ///     tells every client about it. Returns the new pod's <see cref="LmsPod.Id"/>, or null if declined.
++    /// </summary>
++    /// <remarks>
++    ///     The owner must be set before the broadcast: <c>EscapePodEntitySpawner.IsOurs</c> treats a
++    ///     pod with no players as the joining client's own, so every client would move its pod onto it.
++    ///     <para>
++    ///     This does not move the player; call <see cref="Seat"/> after every pod is made, because a
++    ///     teleport while a client is still moving its own pod re-parents the player into nothing.
++    ///     </para>
++    /// </remarks>
++    string? MakePod(NitroxVector3 where, ushort ownerId);
++
++    /// <summary>
++    ///     Puts a player in the escape pod with this <see cref="LmsPod.Id"/> and moves them into it.
++    /// </summary>
++    /// <remarks>
++    ///     By id rather than position, since two pods can share a spot. False when the pod or the
++    ///     player is gone, which is ordinary.
++    /// </remarks>
++    bool Seat(ushort playerId, string podId);
++
++    /// <summary>
++    ///     Takes an escape pod out of the world and tells every client to stop drawing it.
++    /// </summary>
++    /// <remarks>
++    ///     By id rather than position, so two nearby pods are never confused. False when no pod has
++    ///     that id any more. Whether a pod may be removed is decided by the mod.
++    /// </remarks>
++    bool RemovePod(string id);
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/ILmsSpawnPlacement.cs b/Nitrox.Model.Subnautica/Tournament/ILmsSpawnPlacement.cs
+new file mode 100644
+index 0000000..e15e61c
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/ILmsSpawnPlacement.cs
+@@ -0,0 +1,24 @@
++using System.Collections.Generic;
++using Nitrox.Model.DataStructures.Unity;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Where the tournament wants players to start, overriding Nitrox's shared-pod placement.
++/// </summary>
++/// <remarks>
++///     Candidates still come from the game's own start-point map via <c>RandomStartGenerator</c>,
++///     so the mod only picks between points the game already approves.
++/// </remarks>
++public interface ILmsSpawnPlacement
++{
++    /// <summary>How many players share one escape pod.</summary>
++    int PlayersPerPod { get; }
++
++    /// <summary>
++    ///     Where the next pod goes, or null to leave the placement to Nitrox.
++    /// </summary>
++    /// <param name="candidates">Valid start points from the game's own map.</param>
++    /// <param name="taken">Where the pods already placed are.</param>
++    NitroxVector3? NextPod(IReadOnlyList<NitroxVector3> candidates, IReadOnlyList<NitroxVector3> taken);
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/ILmsTournamentHost.cs b/Nitrox.Model.Subnautica/Tournament/ILmsTournamentHost.cs
+new file mode 100644
+index 0000000..c149c89
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/ILmsTournamentHost.cs
+@@ -0,0 +1,23 @@
++using System;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     The tournament, as the server sees it.
++/// </summary>
++/// <remarks>
++///     Implemented by the mod's <c>Lms.Server.dll</c>, loaded by name at startup; without it the
++///     server is stock Nitrox. Calls take the server's world time because clients read the same
++///     clock through <c>DayNightCycle</c> and compute the wall between broadcasts.
++/// </remarks>
++public interface ILmsTournamentHost
++{
++    /// <summary>Drives the match to a moment on the world clock and sends whatever changed.</summary>
++    void Tick(TimeSpan worldNow);
++
++    /// <summary>Runs one <c>lms</c> verb and returns the line to say back to whoever typed it.</summary>
++    string Command(string? verb, TimeSpan worldNow);
++
++    /// <summary>Sends the zone to one player, who has just finished syncing and knows nothing.</summary>
++    void Greet(ushort playerId, TimeSpan worldNow);
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsCombat.cs b/Nitrox.Model.Subnautica/Tournament/LmsCombat.cs
+new file mode 100644
+index 0000000..80f51a9
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsCombat.cs
+@@ -0,0 +1,23 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Says that a tournament is loaded, so player-versus-player damage is the tournament's and
++///     Nitrox's own PvP path must stand down.
++/// </summary>
++/// <remarks>
++///     Otherwise a hit is paid twice, once by Nitrox's <c>PvPAttack</c> relay and once by the mod.
++///     <c>PvPEnabled</c> in server.cfg cannot be used: the <c>pvp</c> command, the launcher and every
++///     command that calls <c>serverConfig.Update(...)</c> re-read it from disk.
++///     <para>
++///     Set while the tournament is loaded, regardless of whether its rules allow blade damage. False
++///     is stock Nitrox.
++///     </para>
++/// </remarks>
++public static class LmsCombat
++{
++    /// <summary>
++    ///     Set when a tournament starts and cleared when it stops, but not when its host dies
++    ///     mid-session. Read by <c>PvPAttackProcessor</c> and the <c>pvp</c> command.
++    /// </summary>
++    public static bool TournamentOwnsPvP { get; set; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsGameModes.cs b/Nitrox.Model.Subnautica/Tournament/LmsGameModes.cs
+new file mode 100644
+index 0000000..2864f3c
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsGameModes.cs
+@@ -0,0 +1,14 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Static seam through which the mod reads and corrects game modes; the mod is loaded by name.
++/// </summary>
++/// <remarks>
++///     Null means nothing is checked (no mod, or the tournament failed to load), and <c>lms round</c>
++///     reports that rather than a clean sweep.
++/// </remarks>
++public static class LmsGameModes
++{
++    /// <summary>Set by the server at startup, cleared when the tournament stops.</summary>
++    public static ILmsGameMode? Modes { get; set; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsMatchStateRelay.cs b/Nitrox.Model.Subnautica/Tournament/LmsMatchStateRelay.cs
+new file mode 100644
+index 0000000..6ae54c0
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsMatchStateRelay.cs
+@@ -0,0 +1,22 @@
++using System;
++using Nitrox.Model.Subnautica.Packets;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Where a <see cref="LmsMatchState"/> goes after Nitrox has received it.
++/// </summary>
++/// <remarks>
++///     Packet processors must live in <c>NitroxClient</c>, so the fork publishes and the mod
++///     subscribes. Raised on Nitrox's packet pump in <c>Multiplayer.Update</c>, i.e. Unity's main thread.
++/// </remarks>
++public static class LmsMatchStateRelay
++{
++    /// <summary>Raised once per packet. Nothing is subscribed when the mod is absent.</summary>
++    public static event Action<string>? Received;
++
++    public static void Publish(string state)
++    {
++        Received?.Invoke(state);
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsNetwork.cs b/Nitrox.Model.Subnautica/Tournament/LmsNetwork.cs
+new file mode 100644
+index 0000000..88c49da
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsNetwork.cs
+@@ -0,0 +1,35 @@
++using System;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     What the tournament client can find out about its own connection.
++/// </summary>
++/// <remarks>
++///     Filled in by <c>NitroxPatcher.LmsHook</c> so the mod never references <c>NitroxClient</c>.
++///     <c>LatencyUpdateCallback</c> carries <c>NetPeer.RemoteTimeDelta</c>, a clock offset, not a
++///     ping; the round trip is <c>NetPeer.Ping</c>. Null until the hook sets it.
++/// </remarks>
++public static class LmsNetwork
++{
++    /// <summary>
++    ///     The round trip to the server in milliseconds, or a negative number when there is none.
++    /// </summary>
++    /// <remarks>
++    ///     A function because the connection belongs to Nitrox's session scope and changes on rejoin.
++    /// </remarks>
++    public static Func<int> Ping { get; set; }
++
++    /// <summary>
++    ///     The round trip in milliseconds, or -1 when nothing can say.
++    /// </summary>
++    /// <remarks>
++    ///     -1 rather than 0, because 0 is a real reading on a local server.
++    /// </remarks>
++    public static int PingMs()
++    {
++        Func<int> ping = Ping;
++
++        return ping == null ? -1 : ping();
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPlayerMode.cs b/Nitrox.Model.Subnautica/Tournament/LmsPlayerMode.cs
+new file mode 100644
+index 0000000..c692087
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPlayerMode.cs
+@@ -0,0 +1,28 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     The game mode one connected player is actually in.
++/// </summary>
++/// <remarks>
++///     Flat so the mod's Core, which cannot see Nitrox, can hold it. The mode is the server's own
++///     spelling of <see cref="Nitrox.Model.DataStructures.GameLogic.NitroxGameMode"/> so new modes
++///     still read correctly.
++/// </remarks>
++public readonly struct LmsPlayerMode
++{
++    public LmsPlayerMode(ushort id, string name, string mode)
++    {
++        Id = id;
++        Name = name;
++        Mode = mode;
++    }
++
++    /// <summary>The server's own player id, which is how a correction is addressed.</summary>
++    public ushort Id { get; }
++
++    /// <summary>The name the tournament knows them by.</summary>
++    public string Name { get; }
++
++    /// <summary>The mode the server holds for them, in the server's own spelling.</summary>
++    public string Mode { get; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPlayerReading.cs b/Nitrox.Model.Subnautica/Tournament/LmsPlayerReading.cs
+new file mode 100644
+index 0000000..ea30937
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPlayerReading.cs
+@@ -0,0 +1,53 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     One player as the server sees them, for the caster view.
++/// </summary>
++/// <remarks>
++///     Flat primitives so it crosses the load-by-name boundary into the mod's <c>netstandard2.0</c>
++///     Core without either side referencing the other.
++/// </remarks>
++public readonly struct LmsPlayerReading
++{
++    public LmsPlayerReading(ushort id, string name, bool alive, float x, float y, float z,
++        float health, float oxygen, float food, float water)
++    {
++        Id = id;
++        Name = name;
++        Alive = alive;
++        X = x;
++        Y = y;
++        Z = z;
++        Health = health;
++        Oxygen = oxygen;
++        Food = food;
++        Water = water;
++    }
++
++    /// <summary>Nitrox's own id for this player, which is what anything about them is keyed on.</summary>
++    public ushort Id { get; }
++
++    public string Name { get; }
++
++    /// <summary>
++    ///     Whether the server believes this player is still in the world.
++    /// </summary>
++    /// <remarks>
++    ///     Nitrox's hardcore permadeath, not tournament elimination, which is decided on the client.
++    /// </remarks>
++    public bool Alive { get; }
++
++    public float X { get; }
++
++    public float Y { get; }
++
++    public float Z { get; }
++
++    public float Health { get; }
++
++    public float Oxygen { get; }
++
++    public float Food { get; }
++
++    public float Water { get; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPlayerReportRelay.cs b/Nitrox.Model.Subnautica/Tournament/LmsPlayerReportRelay.cs
+new file mode 100644
+index 0000000..7ee75ae
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPlayerReportRelay.cs
+@@ -0,0 +1,23 @@
++using System;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Where a <see cref="Packets.LmsPlayerReport"/> goes after the server has received it.
++/// </summary>
++/// <remarks>
++///     Server-side mirror of <see cref="LmsMatchStateRelay"/>. The player id comes from the
++///     connection, never the message. The admin flag is Nitrox's <c>Perms.ADMIN</c>, so the mod can
++///     authorise match changes requested from the client. Raised on the packet pump, not the match
++///     timer's thread.
++/// </remarks>
++public static class LmsPlayerReportRelay
++{
++    /// <summary>Raised once per report. Nothing is subscribed when the mod is absent.</summary>
++    public static event Action<ushort, bool, string>? Received;
++
++    public static void Publish(ushort player, bool isAdmin, string report)
++    {
++        Received?.Invoke(player, isAdmin, report);
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPod.cs b/Nitrox.Model.Subnautica/Tournament/LmsPod.cs
+new file mode 100644
+index 0000000..92a0a70
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPod.cs
+@@ -0,0 +1,43 @@
++using System.Collections.Generic;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     One escape pod as the server sees it, for the mod.
++/// </summary>
++/// <remarks>
++///     Flat primitives, like <see cref="LmsPlayerReading"/>, so the mod's <c>netstandard2.0</c> Core
++///     can hold it without referencing Nitrox.
++/// </remarks>
++public readonly struct LmsPod
++{
++    public LmsPod(string id, float x, float y, float z, IReadOnlyList<ushort> players, int stowedItems)
++    {
++        Id = id;
++        X = x;
++        Y = y;
++        Z = z;
++        Players = players;
++        StowedItems = stowedItems;
++    }
++
++    /// <summary>Nitrox's own id for the pod, as text. The mod hands it back and never reads it.</summary>
++    public string Id { get; }
++
++    public float X { get; }
++
++    public float Y { get; }
++
++    public float Z { get; }
++
++    /// <summary>
++    ///     The ids of the players assigned to it, whether or not they are connected.
++    /// </summary>
++    /// <remarks>
++    ///     A client adopts the real lifepod only for a pod assigned to it; any other pod is drawn as a wreck.
++    /// </remarks>
++    public IReadOnlyList<ushort> Players { get; }
++
++    /// <summary>How many things are stowed anywhere in it — its locker, its cabinet, its children.</summary>
++    public int StowedItems { get; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPodWrecks.cs b/Nitrox.Model.Subnautica/Tournament/LmsPodWrecks.cs
+new file mode 100644
+index 0000000..e9b326f
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPodWrecks.cs
+@@ -0,0 +1,57 @@
++using System;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     The wrecked lifepod prefabs other players' escape pods are drawn as.
++/// </summary>
++/// <remarks>
++///     Nitrox's <c>EscapePodEntitySpawner</c> reuses the single <c>EscapePod.main</c>, so only a
++///     player's own pod is real and everyone else's is scenery. These prefabs have renderers and no
++///     <c>EscapePod</c> component, so they can never become <c>EscapePod.main</c>; the
++///     <c>EscapePod_*</c> slot prefabs have no renderers.
++/// </remarks>
++public static class LmsPodWrecks
++{
++    /// <summary>
++    ///     The nine, in the game's own numbering. Order decides which pod gets which wreck and must
++    ///     match on every client.
++    /// </summary>
++    private static readonly string[] ClassIds =
++    {
++        "66cc5a83-142b-4d8d-8d16-2d6e960f59c3", // life_pod_exploded_2
++        "2aa237f6-2103-4a78-aaa7-104216551f0a", // life_pod_exploded_3
++        "f2b9fe45-39d6-4307-b1e0-143eb1937d6e", // life_pod_exploded_4
++        "85ae70e0-176c-4de6-8c4d-48c4f504cc79", // life_pod_exploded_6
++        "d3b9095f-fcac-46de-83f7-762e3275e837", // life_pod_exploded_7
++        "00891fdf-7264-4c55-b569-732cdcded701", // life_pod_exploded_12
++        "00037e80-3037-48cf-b769-dc97c761e5f6", // life_pod_exploded_13
++        "56b5ed17-2bff-4f7e-aba0-275b6a2398f9", // life_pod_exploded_17
++        "3894aeaf-e1f9-426a-9249-6a4968ac2d8b"  // life_pod_exploded_19
++    };
++
++    /// <summary>How many different wrecks there are, which is how many pods look distinct.</summary>
++    public static int Count => ClassIds.Length;
++
++    /// <summary>
++    ///     Which wreck stands in for a given pod; every client derives the same answer from the pod id.
++    /// </summary>
++    /// <remarks>
++    ///     Summed characters rather than <c>GetHashCode</c>, which is randomised per process.
++    /// </remarks>
++    public static string For(string podId)
++    {
++        if (string.IsNullOrEmpty(podId))
++        {
++            return ClassIds[0];
++        }
++
++        int total = 0;
++        foreach (char character in podId)
++        {
++            total = (total + character) % ClassIds.Length;
++        }
++
++        return ClassIds[total];
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPods.cs b/Nitrox.Model.Subnautica/Tournament/LmsPods.cs
+new file mode 100644
+index 0000000..bf4c053
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPods.cs
+@@ -0,0 +1,13 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Static seam through which the mod re-seats a group; the mod is loaded by name.
++/// </summary>
++/// <remarks>
++///     Null means the server cannot move anybody, and <c>lms podspawn</c> says so.
++/// </remarks>
++public static class LmsPods
++{
++    /// <summary>Set by the server at startup, cleared when the tournament stops.</summary>
++    public static ILmsPodSeating? Seating { get; set; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsPreferences.cs b/Nitrox.Model.Subnautica/Tournament/LmsPreferences.cs
+new file mode 100644
+index 0000000..e88aa8e
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsPreferences.cs
+@@ -0,0 +1,97 @@
++using System;
++using System.Collections.Generic;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Rows and buttons the mod wants in the game's options panel, rendered by the fork.
++/// </summary>
++/// <remarks>
++///     The <c>PlayerPrefs</c> key is the whole contract: Nitrox stores the value under it and the mod
++///     reads it back. Declared when the mod initialises, which is always before the panel is built.
++/// </remarks>
++public static class LmsPreferences
++{
++    private static readonly List<LmsPreference> DeclaredPreferences = new();
++    private static readonly List<LmsPreferenceButton> DeclaredButtons = new();
++
++    /// <summary>Everything the mod asked for, in the order it asked.</summary>
++    public static IReadOnlyList<LmsPreference> Preferences => DeclaredPreferences;
++
++    /// <summary>The buttons the mod asked for, in the order it asked.</summary>
++    public static IReadOnlyList<LmsPreferenceButton> Buttons => DeclaredButtons;
++
++    /// <summary>Asks for one row with a control on it.</summary>
++    public static void Declare(LmsPreference preference)
++    {
++        if (preference != null)
++        {
++            DeclaredPreferences.Add(preference);
++        }
++    }
++
++    /// <summary>Asks for one button.</summary>
++    public static void Declare(LmsPreferenceButton button)
++    {
++        if (button != null)
++        {
++            DeclaredButtons.Add(button);
++        }
++    }
++
++    /// <summary>
++    ///     Forgets everything declared so far.
++    /// </summary>
++    /// <remarks>
++    ///     Called by the mod before declaring, so a reload cannot duplicate rows.
++    /// </remarks>
++    public static void Clear()
++    {
++        DeclaredPreferences.Clear();
++        DeclaredButtons.Clear();
++    }
++}
++
++/// <summary>One row with a toggle or a slider on it.</summary>
++public sealed class LmsPreference
++{
++    /// <summary>The heading it belongs under.</summary>
++    public string Heading { get; set; } = string.Empty;
++
++    /// <summary>The <c>PlayerPrefs</c> key the value is stored under.</summary>
++    public string Key { get; set; } = string.Empty;
++
++    /// <summary>What the row says.</summary>
++    public string Label { get; set; } = string.Empty;
++
++    /// <summary>A slider when true, a toggle when false.</summary>
++    public bool IsSlider { get; set; }
++
++    /// <summary>The value before anybody has touched it. Non-zero is on, for a toggle.</summary>
++    public float Default { get; set; }
++
++    /// <summary>Slider only.</summary>
++    public float Minimum { get; set; }
++
++    /// <summary>Slider only.</summary>
++    public float Maximum { get; set; } = 1f;
++
++    /// <summary>Slider only.</summary>
++    public float Step { get; set; } = 0.05f;
++
++    /// <summary>Called with the new value when the player moves the control. Optional.</summary>
++    public Action<float>? Changed { get; set; }
++}
++
++/// <summary>One button. Pressing it is the mod's business; drawing it is the fork's.</summary>
++public sealed class LmsPreferenceButton
++{
++    /// <summary>The heading it belongs under.</summary>
++    public string Heading { get; set; } = string.Empty;
++
++    /// <summary>What the button says.</summary>
++    public string Label { get; set; } = string.Empty;
++
++    /// <summary>What to do when it is pressed.</summary>
++    public Action? Pressed { get; set; }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsReporting.cs b/Nitrox.Model.Subnautica/Tournament/LmsReporting.cs
+new file mode 100644
+index 0000000..c36d1d9
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsReporting.cs
+@@ -0,0 +1,24 @@
++using System;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     How the tournament client sends its player report to the server.
++/// </summary>
++/// <remarks>
++///     Filled in by <c>NitroxPatcher.LmsHook</c> so the mod never references <c>NitroxClient</c>.
++///     Null until set; sends outside a session are dropped.
++/// </remarks>
++public static class LmsReporting
++{
++    /// <summary>Sends one report to the server. Set by the fork, called by the mod.</summary>
++    public static Action<string> Send { get; set; }
++
++    /// <summary>Sends if there is anywhere to send to, which there is not in the main menu.</summary>
++    public static void Report(string report)
++    {
++        Action<string> send = Send;
++
++        send?.Invoke(report);
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsRoster.cs b/Nitrox.Model.Subnautica/Tournament/LmsRoster.cs
+new file mode 100644
+index 0000000..fe3fdff
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsRoster.cs
+@@ -0,0 +1,27 @@
++using System;
++using System.Collections.Generic;
++
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     Who is in the world, read by the mod on its own cadence.
++/// </summary>
++/// <remarks>
++///     Filled in by the server, since the mod is loaded by name and cannot see <c>PlayerManager</c>.
++///     Empty when unset.
++/// </remarks>
++public static class LmsRoster
++{
++    private static readonly LmsPlayerReading[] Nobody = new LmsPlayerReading[0];
++
++    /// <summary>Set by the server at startup, cleared when the tournament stops.</summary>
++    public static Func<IReadOnlyList<LmsPlayerReading>> Source { get; set; }
++
++    /// <summary>Everybody connected, or nobody when there is no source of one.</summary>
++    public static IReadOnlyList<LmsPlayerReading> Read()
++    {
++        Func<IReadOnlyList<LmsPlayerReading>> source = Source;
++
++        return source == null ? Nobody : source() ?? Nobody;
++    }
++}
+diff --git a/Nitrox.Model.Subnautica/Tournament/LmsSpawn.cs b/Nitrox.Model.Subnautica/Tournament/LmsSpawn.cs
+new file mode 100644
+index 0000000..0e5d031
+--- /dev/null
++++ b/Nitrox.Model.Subnautica/Tournament/LmsSpawn.cs
+@@ -0,0 +1,14 @@
++namespace Nitrox.Model.Subnautica.Tournament;
++
++/// <summary>
++///     The seam between the escape pod manager and the tournament mod.
++/// </summary>
++/// <remarks>
++///     Static because <c>EscapePodManager</c> is built during world load, not resolved from the
++///     container. Null is stock Nitrox join behaviour.
++/// </remarks>
++public static class LmsSpawn
++{
++    /// <summary>Set by the mod at startup. Null when there is no tournament, or it does not ask.</summary>
++    public static ILmsSpawnPlacement? Placement { get; set; }
++}
+diff --git a/Nitrox.Model/Networking/PacketFrame.cs b/Nitrox.Model/Networking/PacketFrame.cs
+new file mode 100644
+index 0000000..645c898
+--- /dev/null
++++ b/Nitrox.Model/Networking/PacketFrame.cs
+@@ -0,0 +1,109 @@
++using System.Buffers;
++using System.IO;
++using System.IO.Compression;
++using LiteNetLib.Utils;
++using Nitrox.Model.Packets;
++
++namespace Nitrox.Model.Networking;
++
++/// <summary>
++///     How both ends put a packet on the wire: its length, then the packet -- deflated when that saves
++///     datagrams.
++/// </summary>
++/// <remarks>
++///     LiteNetLib keeps at most 64 reliable datagrams of 1,432 bytes in flight per channel (~90 KB per
++///     round trip), so large packets such as a join's <c>SpawnEntities</c> are deflated to save round trips.
++///     <para>
++///     A negative length marks a deflated packet and is followed by the inflated length. A packet that
++///     fits in one datagram is framed exactly as stock, so the version handshake still reads across builds.
++///     </para>
++/// </remarks>
++public static class PacketFrame
++{
++    /// <summary>Below this a packet is one datagram already, and deflating it would save bytes but no round trips.</summary>
++    private const int DeflateFrom = 1024;
++
++    /// <summary>The largest packet a deflated frame may claim to inflate to, so a forged frame cannot ask for gigabytes.</summary>
++    private const int LargestPacket = 64 * 1024 * 1024;
++
++    public static void Write(NetDataWriter writer, Packet packet)
++    {
++        byte[] plain = packet.Serialize();
++        writer.Reset();
++
++        if (plain.Length >= DeflateFrom)
++        {
++            byte[] deflated = Deflate(plain);
++            if (deflated.Length < plain.Length)
++            {
++                writer.Put(-deflated.Length);
++                writer.Put(plain.Length);
++                writer.Put(deflated);
++                return;
++            }
++        }
++
++        writer.Put(plain.Length);
++        writer.Put(plain);
++    }
++
++    public static Packet Read(NetDataReader reader)
++    {
++        int length = reader.GetInt();
++        int plainLength = length < 0 ? reader.GetInt() : length;
++        if (plainLength is < 0 or > LargestPacket)
++        {
++            throw new InvalidDataException($"A packet frame claims {plainLength} bytes");
++        }
++
++        byte[] plain = ArrayPool<byte>.Shared.Rent(plainLength);
++        try
++        {
++            if (length < 0)
++            {
++                Inflate(reader, -length, plain, plainLength);
++            }
++            else
++            {
++                reader.GetBytes(plain, plainLength);
++            }
++
++            return Packet.Deserialize(plain);
++        }
++        finally
++        {
++            ArrayPool<byte>.Shared.Return(plain, true);
++        }
++    }
++
++    private static byte[] Deflate(byte[] plain)
++    {
++        using MemoryStream deflated = new();
++        using (DeflateStream deflate = new(deflated, CompressionLevel.Optimal, true))
++        {
++            deflate.Write(plain, 0, plain.Length);
++        }
++
++        return deflated.ToArray();
++    }
++
++    private static void Inflate(NetDataReader reader, int deflatedLength, byte[] plain, int plainLength)
++    {
++        using (DeflateStream inflate = new(new MemoryStream(reader.RawData, reader.Position, deflatedLength), CompressionMode.Decompress))
++        {
++            int read = 0;
++            while (read < plainLength)
++            {
++                int got = inflate.Read(plain, read, plainLength - read);
++                if (got == 0)
++                {
++                    throw new InvalidDataException($"A deflated packet ended at {read} of {plainLength} bytes");
++                }
++
++                read += got;
++            }
++        }
++
++        reader.SkipBytes(deflatedLength);
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/Commands/LmsCommand.cs b/Nitrox.Server.Subnautica/Models/Commands/LmsCommand.cs
+new file mode 100644
+index 0000000..e615cea
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/Commands/LmsCommand.cs
+@@ -0,0 +1,33 @@
++using Nitrox.Model.DataStructures.GameLogic;
++using Nitrox.Server.Subnautica.Models.Commands.Abstract;
++using Nitrox.Server.Subnautica.Models.Commands.Abstract.Type;
++using Nitrox.Server.Subnautica.Models.GameLogic;
++
++namespace Nitrox.Server.Subnautica.Models.Commands;
++
++/// <summary>
++///     The operator's control over the tournament match: <c>lms start</c>, <c>lms skip</c> and the rest.
++/// </summary>
++/// <remarks>
++///     Admin-only; the server console is allowed. The modifier parameter exists only so Nitrox
++///     accepts a second word (<c>lms podclear all</c>); the whole tail is passed to the mod.
++/// </remarks>
++public class LmsCommand : Command
++{
++    private readonly LmsTournament tournament;
++
++    public LmsCommand(LmsTournament tournament) : base("lms", Perms.ADMIN, "Runs the Last Man Standing tournament")
++    {
++        AddParameter(new TypeString("status/start/pause/resume/skip/reset/next/podspawn/podclear", false,
++            "What to do to the match"));
++        AddParameter(new TypeString("all", false, "Modifier: `podclear all` removes every escape pod, not only the derelicts"));
++
++        this.tournament = tournament;
++    }
++
++    protected override void Execute(CallArgs args)
++    {
++        // Bare `lms` means status. Words are passed as typed; the mod normalizes the spacing.
++        SendMessage(args.Sender, tournament.Command(args.GetTillEnd()));
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/Commands/LmsPhantomPodsCommand.cs b/Nitrox.Server.Subnautica/Models/Commands/LmsPhantomPodsCommand.cs
+new file mode 100644
+index 0000000..4980abd
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/Commands/LmsPhantomPodsCommand.cs
+@@ -0,0 +1,113 @@
++using System.Collections.Generic;
++using Nitrox.Model.DataStructures;
++using Nitrox.Model.DataStructures.GameLogic;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Server.Subnautica.Models.Commands.Abstract;
++using Nitrox.Server.Subnautica.Models.Commands.Abstract.Type;
++using Nitrox.Server.Subnautica.Models.GameLogic;
++using Nitrox.Server.Subnautica.Models.Serialization.World;
++
++namespace Nitrox.Server.Subnautica.Models.Commands;
++
++/// <summary>
++///     Test command: adds escape pods for absent players, so one machine can see how other players'
++///     pods (drawn as wrecks) look.
++/// </summary>
++/// <remarks>
++///     Pods go through <see cref="EscapePodManager.AssignPlayerToEscapePod"/> under unused player ids,
++///     the same path a real join takes. They are saved with the world, so use a scratch save.
++/// </remarks>
++public class LmsPhantomPodsCommand : Command
++{
++    /// <summary>
++    ///     First phantom player id; phantoms count down from the top because Nitrox assigns real ids
++    ///     from the bottom.
++    /// </summary>
++    private const ushort FirstPhantomId = ushort.MaxValue - 1;
++
++    /// <summary>The bottom of the phantom range, so a real player's id is never read as one.</summary>
++    private const ushort LastPhantomId = ushort.MaxValue - 1000;
++
++    /// <summary>Maximum pods one call may add.</summary>
++    private const int MostPods = 24;
++
++    private readonly PlayerManager playerManager;
++    private readonly World world;
++
++    public LmsPhantomPodsCommand(PlayerManager playerManager, World world) :
++        base("lmsphantom", Perms.ADMIN, "Adds escape pods for players who are not there, for testing a pod each on one machine")
++    {
++        AddParameter(new TypeInt("pods", false, "How many pods to add"));
++
++        this.playerManager = playerManager;
++        this.world = world;
++    }
++
++    /// <summary>
++    ///     The next unused phantom id, read from the players already in the pods so repeated calls
++    ///     never reuse one.
++    /// </summary>
++    private static ushort NextPhantomId(List<EscapePodEntity> pods)
++    {
++        ushort next = FirstPhantomId;
++
++        foreach (EscapePodEntity pod in pods)
++        {
++            foreach (ushort player in pod.Players)
++            {
++                if (player >= LastPhantomId && player <= next)
++                {
++                    next = (ushort)(player - 1);
++                }
++            }
++        }
++
++        return next;
++    }
++
++    protected override void Execute(CallArgs args)
++    {
++        List<EscapePodEntity> before = world.EntityRegistry.GetEntities<EscapePodEntity>();
++
++        int wanted = args.Get<int>(0);
++        if (wanted <= 0)
++        {
++            SendMessage(args.Sender, $"The world has {before.Count} escape pod(s). `lmsphantom 4` adds four more.");
++            return;
++        }
++
++        if (wanted > MostPods)
++        {
++            SendMessage(args.Sender, $"{wanted} is more pods than a tournament has players; {MostPods} is the most this will make.");
++            return;
++        }
++
++        ushort phantom = NextPhantomId(before);
++        int added = 0;
++
++        for (int pod = 0; pod < wanted; pod++, phantom--)
++        {
++            world.EscapePodManager.AssignPlayerToEscapePod(phantom, out Optional<EscapePodEntity> created);
++
++            if (!created.HasValue)
++            {
++                // An existing pod with room took the phantom (the stock behavior without a
++                // tournament), so there is nothing to broadcast.
++                SendMessage(args.Sender, added == 0
++                    ? $"A pod the world already has took the phantom instead of a new one being made, so "
++                      + $"nothing was added. Either spawn.ownPod is off, or that pod predates this world "
++                      + $"having a tournament -- {before.Count} pod(s) were here before this command."
++                    : $"Added {added} pod(s); the next phantom shared one instead of making another.");
++                return;
++            }
++
++            playerManager.SendPacketToAllPlayers(new SpawnEntities(created.Value));
++            added++;
++        }
++
++        List<EscapePodEntity> now = world.EntityRegistry.GetEntities<EscapePodEntity>();
++        SendMessage(args.Sender, $"Added {added} phantom pod(s); the world has {now.Count}. " +
++                                 "Each is somebody else's as far as a client is concerned, so it should draw as a wreck.");
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/Commands/PvpCommand.cs b/Nitrox.Server.Subnautica/Models/Commands/PvpCommand.cs
+index dff8f57..ff5152e 100644
+--- a/Nitrox.Server.Subnautica/Models/Commands/PvpCommand.cs
++++ b/Nitrox.Server.Subnautica/Models/Commands/PvpCommand.cs
+@@ -1,6 +1,7 @@
+ using System.IO;
+ using Nitrox.Model.DataStructures.GameLogic;
+ using Nitrox.Model.Serialization;
++using Nitrox.Model.Subnautica.Tournament;
+ using Nitrox.Server.Subnautica.Models.Commands.Abstract;
+ using Nitrox.Server.Subnautica.Models.Commands.Abstract.Type;
+ 
+@@ -21,6 +22,14 @@ public class PvpCommand : Command
+ 
+     protected override void Execute(CallArgs args)
+     {
++        // The tournament owns PvP while loaded. The message does not claim it is running, because a
++        // tournament that failed can leave this flag set.
++        if (LmsCombat.TournamentOwnsPvP)
++        {
++            SendMessage(args.Sender, "PvP on this server belongs to the Last Man Standing tournament; set it in lms-tournament.yaml. If the tournament has stopped, a restart gives this command back.");
++            return;
++        }
++
+         string state = args.Get<string>(0).ToLower();
+ 
+         bool pvpEnabled = false;
+diff --git a/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibConnection.cs b/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibConnection.cs
+index c74a70a..60fc8a9 100644
+--- a/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibConnection.cs
++++ b/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibConnection.cs
+@@ -23,11 +23,7 @@ public class LiteNetLibConnection : INitroxConnection, IEquatable<LiteNetLibConn
+     {
+         if (peer.ConnectionState == ConnectionState.Connected)
+         {
+-            byte[] packetData = packet.Serialize();
+-            dataWriter.Reset();
+-            dataWriter.Put(packetData.Length);
+-            dataWriter.Put(packetData);
+-
++            PacketFrame.Write(dataWriter, packet);
+             peer.Send(dataWriter, (byte)packet.UdpChannel, NitroxDeliveryMethod.ToLiteNetLib(packet.DeliveryMethod));
+         }
+         else
+diff --git a/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibServer.cs b/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibServer.cs
+index 27d6a3c..5bc346c 100644
+--- a/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibServer.cs
++++ b/Nitrox.Server.Subnautica/Models/Communication/LiteNetLibServer.cs
+@@ -1,8 +1,8 @@
+-using System.Buffers;
+ using System.Threading;
+ using LiteNetLib;
+ using LiteNetLib.Utils;
+ using Mono.Nat;
++using Nitrox.Model.Networking;
+ using Nitrox.Model.Serialization;
+ using Nitrox.Server.Subnautica.Models.Packets;
+ using Nitrox.Server.Subnautica.Models.GameLogic;
+@@ -138,19 +138,9 @@ public class LiteNetLibServer : NitroxServer
+ 
+     private void NetworkDataReceived(NetPeer peer, NetDataReader reader, byte channel, DeliveryMethod deliveryMethod)
+     {
+-        int packetDataLength = reader.GetInt();
+-        byte[] packetData = ArrayPool<byte>.Shared.Rent(packetDataLength);
+-        try
+-        {
+-            reader.GetBytes(packetData, packetDataLength);
+-            Packet packet = Packet.Deserialize(packetData);
+-            INitroxConnection connection = GetConnection(peer.Id);
+-            ProcessIncomingData(connection, packet);
+-        }
+-        finally
+-        {
+-            ArrayPool<byte>.Shared.Return(packetData, true);
+-        }
++        Packet packet = PacketFrame.Read(reader);
++        INitroxConnection connection = GetConnection(peer.Id);
++        ProcessIncomingData(connection, packet);
+     }
+ 
+     private INitroxConnection GetConnection(int remoteIdentifier)
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/Entities/Spawning/BatchEntitySpawner.cs b/Nitrox.Server.Subnautica/Models/GameLogic/Entities/Spawning/BatchEntitySpawner.cs
+index 5ac0a7e..16da540 100644
+--- a/Nitrox.Server.Subnautica/Models/GameLogic/Entities/Spawning/BatchEntitySpawner.cs
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/Entities/Spawning/BatchEntitySpawner.cs
+@@ -21,7 +21,6 @@ public class BatchEntitySpawner : IEntitySpawner
+     private readonly RandomSpawnSpoofer randomSpawnSpoofer;
+     private readonly IUwePrefabFactory prefabFactory;
+     private readonly IEntityBootstrapperManager entityBootstrapperManager;
+-    private readonly PDAStateData pdaStateData;
+ 
+     private readonly string seed;
+ 
+@@ -69,7 +68,6 @@ public class BatchEntitySpawner : IEntitySpawner
+         ServerProtoBufSerializer serializer,
+         IEntityBootstrapperManager entityBootstrapperManager,
+         Dictionary<string, PrefabPlaceholdersGroupAsset> placeholdersGroupsByClassId,
+-        PDAStateData pdaStateData,
+         RandomSpawnSpoofer randomSpawnSpoofer,
+         string seed
+     )
+@@ -79,7 +77,6 @@ public class BatchEntitySpawner : IEntitySpawner
+         this.prefabFactory = prefabFactory;
+         this.entityBootstrapperManager = entityBootstrapperManager;
+         this.placeholdersGroupsByClassId = placeholdersGroupsByClassId;
+-        this.pdaStateData = pdaStateData;
+         batchCellsParser = new BatchCellsParser(entitySpawnPointFactory, serializer);
+         this.randomSpawnSpoofer = randomSpawnSpoofer;
+         this.seed = seed;
+@@ -226,17 +223,11 @@ public class BatchEntitySpawner : IEntitySpawner
+                 float weightedProbability = prefab.Probability / entitySpawnPoint.Density;
+                 if (weightedProbability > 0)
+                 {
++                    // Fragments are never dropped for completed scans: PDA progress is per player but
++                    // a batch is shared by every client, so the pool is always the fresh-world pool.
+                     if (prefab.IsFragment)
+                     {
+-                        if (pdaStateData.ScannerComplete.Contains(uweWorldEntity.TechType))
+-                        {
+-                            completeFragmentProbability += weightedProbability;
+-                            continue;
+-                        }
+-                        else
+-                        {
+-                            fragmentProbability += weightedProbability;
+-                        }
++                        fragmentProbability += weightedProbability;
+                     }
+                     prefab = prefab with { Probability = weightedProbability };
+                     allowedPrefabs.Add(prefab);
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/EscapePodManager.cs b/Nitrox.Server.Subnautica/Models/GameLogic/EscapePodManager.cs
+index b090148..9a69d18 100644
+--- a/Nitrox.Server.Subnautica/Models/GameLogic/EscapePodManager.cs
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/EscapePodManager.cs
+@@ -5,6 +5,7 @@ using Nitrox.Model.DataStructures.Unity;
+ using Nitrox.Model.Subnautica.DataStructures.GameLogic;
+ using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
+ using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities.Metadata;
++using Nitrox.Model.Subnautica.Tournament;
+ using Nitrox.Server.Subnautica.Models.GameLogic.Entities;
+ 
+ namespace Nitrox.Server.Subnautica.Models.GameLogic;
+@@ -14,17 +15,19 @@ public class EscapePodManager
+     private const int PLAYERS_PER_ESCAPEPOD = 50;
+ 
+     private readonly EntityRegistry entityRegistry;
++    private readonly WorldEntityManager worldEntityManager;
+     private readonly ThreadSafeDictionary<ushort, EscapePodEntity> escapePodsByPlayerId = new();
+     private EscapePodEntity podForNextPlayer;
+     private readonly string seed;
+ 
+     private readonly RandomStartGenerator randomStart;
+ 
+-    public EscapePodManager(EntityRegistry entityRegistry, RandomStartGenerator randomStart, string seed)
++    public EscapePodManager(EntityRegistry entityRegistry, WorldEntityManager worldEntityManager, RandomStartGenerator randomStart, string seed)
+     {
+         this.seed = seed;
+         this.randomStart = randomStart;
+         this.entityRegistry = entityRegistry;
++        this.worldEntityManager = worldEntityManager;
+ 
+         List<EscapePodEntity> escapePods = entityRegistry.GetEntities<EscapePodEntity>();
+ 
+@@ -41,7 +44,8 @@ public class EscapePodManager
+             return podEntity.Id;
+         }
+ 
+-        if (IsPodFull(podForNextPlayer))
++        // Null on a fresh save before the first join; see InitializePodForNextPlayer.
++        if (podForNextPlayer == null || IsPodFull(podForNextPlayer))
+         {
+             newlyCreatedPod = Optional.Of(CreateNewEscapePod());
+             podForNextPlayer = newlyCreatedPod.Value;
+@@ -53,25 +57,102 @@ public class EscapePodManager
+         return podForNextPlayer.Id;
+     }
+ 
+-    private EscapePodEntity CreateNewEscapePod()
++    private EscapePodEntity CreateNewEscapePod() => CreateNewEscapePod(GetStartPosition());
++
++    /// <summary>
++    ///     Makes a fully furnished escape pod at the given position.
++    /// </summary>
++    private EscapePodEntity CreateNewEscapePod(NitroxVector3 at)
+     {
+-        EscapePodEntity escapePod = new(GetStartPosition(), new NitroxId(), new EscapePodMetadata(false, false));
++        EscapePodEntity escapePod = new(at, new NitroxId(), new EscapePodMetadata(false, false));
+ 
+         escapePod.ChildEntities.Add(new PrefabChildEntity(new NitroxId(), "5c06baec-0539-4f26-817d-78443548cc52", new NitroxTechType("Radio"), 0, null, escapePod.Id));
+         escapePod.ChildEntities.Add(new PrefabChildEntity(new NitroxId(), "c0175cf7-0b6a-4a1d-938f-dad0dbb6fa06", new NitroxTechType("MedicalCabinet"), 0, null, escapePod.Id));
+         escapePod.ChildEntities.Add(new PrefabChildEntity(new NitroxId(), "9f16d82b-11f4-4eeb-aedf-f2fa2bfca8e3", new NitroxTechType("Fabricator"), 0, null, escapePod.Id));
+         escapePod.ChildEntities.Add(new InventoryEntity(0, new NitroxId(), new NitroxTechType("SmallStorage"), null, escapePod.Id, []));
+ 
+-        entityRegistry.AddOrUpdate(escapePod);
++        // Via the world entity manager, not just the registry: escape pods are GlobalRootEntities and
++        // the save reads the manager's collection, so a registry-only pod would never be saved.
++        worldEntityManager.AddOrUpdateGlobalRootEntity(escapePod);
+ 
+         return escapePod;
+     }
+ 
++    /// <summary>
++    ///     Makes an escape pod exactly here, for the tournament, bypassing
++    ///     <see cref="GetStartPosition"/> because the caller has already planned the layout.
++    /// </summary>
++    public EscapePodEntity MakePodAt(NitroxVector3 where) => CreateNewEscapePod(where);
++
++    /// <summary>
++    ///     The game's approved start points, read from a texture in a Unity asset bundle; used by
++    ///     <c>lms podspawn</c> to re-plan a group.
++    /// </summary>
++    public List<NitroxVector3> StartPoints => randomStart.GenerateRandomStartPositions(seed);
++
++    /// <summary>
++    ///     Forgets a pod being removed from the world, clearing it from <c>escapePodsByPlayerId</c> and
++    ///     <c>podForNextPlayer</c> so no player is assigned to a deleted pod.
++    /// </summary>
++    public void ForgetPod(NitroxId podId)
++    {
++        List<ushort> assigned = new();
++        foreach (KeyValuePair<ushort, EscapePodEntity> each in escapePodsByPlayerId)
++        {
++            if (each.Value.Id.Equals(podId))
++            {
++                assigned.Add(each.Key);
++            }
++        }
++
++        foreach (ushort playerId in assigned)
++        {
++            escapePodsByPlayerId.Remove(playerId);
++        }
++
++        if (podForNextPlayer != null && podForNextPlayer.Id.Equals(podId))
++        {
++            podForNextPlayer = null;
++        }
++    }
++
++    /// <summary>
++    ///     Moves a player from whatever pod they had into this one; the old pod and its contents stay.
++    /// </summary>
++    /// <remarks>
++    ///     <see cref="AssignPlayerToEscapePod"/> always returns a player's existing pod, so it cannot reseat.
++    /// </remarks>
++    public void SeatPlayerInPod(ushort playerId, EscapePodEntity pod)
++    {
++        if (escapePodsByPlayerId.TryGetValue(playerId, out EscapePodEntity had))
++        {
++            if (had == pod)
++            {
++                return;
++            }
++
++            had.Players.Remove(playerId);
++        }
++
++        pod.Players.Add(playerId);
++        escapePodsByPlayerId[playerId] = pod;
++
++        // Recompute so the next join skips the pod just filled and can reuse one just emptied.
++        InitializePodForNextPlayer(entityRegistry.GetEntities<EscapePodEntity>());
++    }
++
+     private NitroxVector3 GetStartPosition()
+     {
+         List<EscapePodEntity> escapePods = entityRegistry.GetEntities<EscapePodEntity>();
+ 
+-        Random rnd = new(seed.GetHashCode());
++        NitroxVector3? tournamentStart = TournamentStartPosition(escapePods);
++        if (tournamentStart.HasValue)
++        {
++            return tournamentStart.Value;
++        }
++
++        // Stable across server starts, unlike string.GetHashCode; see RandomStartGenerator.SeedOf.
++        Random rnd = new(RandomStartGenerator.SeedOf(seed));
+         NitroxVector3 position = randomStart.GenerateRandomStartPosition(rnd);
+ 
+         if (escapePods.Count == 0)
+@@ -121,6 +202,13 @@ public class EscapePodManager
+         return new NitroxVector3(lastEscapePodPosition.X + x, 0, lastEscapePodPosition.Z + z);
+     }
+ 
++    /// <summary>
++    ///     Adopts a non-full pod the save already has, or leaves none.
++    /// </summary>
++    /// <remarks>
++    ///     No pod is made here: this runs during save load, before the mod sets
++    ///     <see cref="LmsSpawn.Placement"/>, so <see cref="AssignPlayerToEscapePod"/> makes it on demand.
++    /// </remarks>
+     private void InitializePodForNextPlayer(List<EscapePodEntity> escapePods)
+     {
+         foreach (EscapePodEntity pod in escapePods)
+@@ -132,7 +220,7 @@ public class EscapePodManager
+             }
+         }
+ 
+-        podForNextPlayer = CreateNewEscapePod();
++        podForNextPlayer = null;
+     }
+ 
+     private void InitializeEscapePodsByPlayerId(List<EscapePodEntity> escapePods)
+@@ -147,8 +235,32 @@ public class EscapePodManager
+         }
+     }
+ 
++    /// <summary>
++    ///     Where the tournament wants the next pod, chosen from the game's approved start points; null
++    ///     falls back to Nitrox's own placement.
++    /// </summary>
++    private NitroxVector3? TournamentStartPosition(List<EscapePodEntity> escapePods)
++    {
++        ILmsSpawnPlacement placement = LmsSpawn.Placement;
++        if (placement == null)
++        {
++            return null;
++        }
++
++        List<NitroxVector3> taken = new(escapePods.Count);
++        foreach (EscapePodEntity pod in escapePods)
++        {
++            taken.Add(pod.Transform.Position);
++        }
++
++        return placement.NextPod(randomStart.GenerateRandomStartPositions(seed), taken);
++    }
++
+     private static bool IsPodFull(EscapePodEntity pod)
+     {
+-        return pod.Players.Count >= PLAYERS_PER_ESCAPEPOD;
++        // A tournament gives every player their own pod; otherwise Nitrox's fifty.
++        int limit = LmsSpawn.Placement?.PlayersPerPod ?? PLAYERS_PER_ESCAPEPOD;
++
++        return pod.Players.Count >= limit;
+     }
+ }
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/JoiningManager.cs b/Nitrox.Server.Subnautica/Models/GameLogic/JoiningManager.cs
+index 7bf0fc7..f64aaad 100644
+--- a/Nitrox.Server.Subnautica/Models/GameLogic/JoiningManager.cs
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/JoiningManager.cs
+@@ -166,7 +166,7 @@ public sealed class JoiningManager
+             player.EquippedItems,
+             player.UsedItems,
+             player.QuickSlotsBindingIds,
+-            world.GameData.PDAState.GetInitialPDAData(),
++            world.GameData.PDAState.GetInitialPDAData(player.Name),
+             world.GameData.StoryGoals.GetInitialStoryGoalData(world.ScheduleKeeper, player),
+             player.Position,
+             player.Rotation,
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/LmsGameMode.cs b/Nitrox.Server.Subnautica/Models/GameLogic/LmsGameMode.cs
+new file mode 100644
+index 0000000..fe56d96
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/LmsGameMode.cs
+@@ -0,0 +1,67 @@
++using System.Collections.Generic;
++using Nitrox.Model.Server;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Model.Subnautica.Tournament;
++
++namespace Nitrox.Server.Subnautica.Models.GameLogic;
++
++/// <summary>
++///     Lets the tournament mod read players' game modes and force a player back into survival.
++/// </summary>
++/// <remarks>
++///     Correcting mirrors <c>GameModeCommand</c>: set <c>player.GameMode</c> so it persists, then
++///     broadcast <c>GameModeChanged.ForPlayer</c>, or the player stays invincible until they reconnect.
++/// </remarks>
++internal sealed class LmsGameMode : ILmsGameMode
++{
++    private readonly PlayerManager playerManager;
++
++    internal LmsGameMode(PlayerManager playerManager)
++    {
++        this.playerManager = playerManager;
++    }
++
++    public IReadOnlyList<LmsPlayerMode> Modes
++    {
++        get
++        {
++            List<LmsPlayerMode> readings = new();
++
++            foreach (Player player in playerManager.GetAllPlayers())
++            {
++                // ToString(): the mod cannot reference this enum, and the audit log uses its spelling.
++                readings.Add(new LmsPlayerMode(player.Id, player.Name, player.GameMode.ToString()));
++            }
++
++            return readings;
++        }
++    }
++
++    public bool MakeSurvival(ushort playerId)
++    {
++        foreach (Player player in playerManager.GetAllPlayers())
++        {
++            if (player.Id != playerId)
++            {
++                continue;
++            }
++
++            player.GameMode = NitroxGameMode.SURVIVAL;
++
++            // PlayerContext.GameMode is what other clients build this player from (join broadcast,
++            // InitialPlayerSync), and is otherwise never updated. The packet below cannot cover a
++            // client that has no RemotePlayer for this id yet, and a stale CREATIVE there makes the
++            // player unattackable on that machine.
++            if (player.PlayerContext != null)
++            {
++                player.PlayerContext.GameMode = NitroxGameMode.SURVIVAL;
++            }
++
++            playerManager.SendPacketToAllPlayers(
++                GameModeChanged.ForPlayer(playerId, NitroxGameMode.SURVIVAL));
++            return true;
++        }
++
++        return false;
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/LmsPodSeating.cs b/Nitrox.Server.Subnautica/Models/GameLogic/LmsPodSeating.cs
+new file mode 100644
+index 0000000..fd2857d
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/LmsPodSeating.cs
+@@ -0,0 +1,159 @@
++using System.Collections.Generic;
++using Nitrox.Model.DataStructures;
++using Nitrox.Model.DataStructures.GameLogic;
++using Nitrox.Model.DataStructures.Unity;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Model.Subnautica.Tournament;
++using Nitrox.Server.Subnautica.Models.Serialization.World;
++
++namespace Nitrox.Server.Subnautica.Models.GameLogic;
++
++/// <summary>
++///     Lets the tournament mod read escape pods, make new ones, seat players in them and remove them.
++/// </summary>
++internal sealed class LmsPodSeating : ILmsPodSeating
++{
++    private readonly World world;
++    private readonly PlayerManager playerManager;
++
++    internal LmsPodSeating(World world, PlayerManager playerManager)
++    {
++        this.world = world;
++        this.playerManager = playerManager;
++    }
++
++    public IReadOnlyList<LmsPod> Pods
++    {
++        get
++        {
++            List<EscapePodEntity> pods = world.EntityRegistry.GetEntities<EscapePodEntity>();
++            List<LmsPod> readings = new(pods.Count);
++
++            foreach (EscapePodEntity pod in pods)
++            {
++                NitroxVector3 where = pod.Transform.Position;
++
++                readings.Add(new LmsPod(pod.Id.ToString(), where.X, where.Y, where.Z,
++                    pod.Players.ToArray(), StowedIn(pod)));
++            }
++
++            return readings;
++        }
++    }
++
++    /// <summary>
++    ///     Counts <see cref="InventoryItemEntity"/>s anywhere in a pod's hierarchy (locker, medical
++    ///     cabinet, ...): what clearing it would destroy. The built-in fittings are not counted.
++    /// </summary>
++    private static int StowedIn(Entity pod)
++    {
++        int stowed = 0;
++
++        foreach (Entity child in pod.ChildEntities)
++        {
++            if (child is InventoryItemEntity)
++            {
++                stowed++;
++            }
++
++            stowed += StowedIn(child);
++        }
++
++        return stowed;
++    }
++
++    public IReadOnlyList<NitroxVector3> StartPoints => world.EscapePodManager.StartPoints;
++
++    public string MakePod(NitroxVector3 where, ushort ownerId)
++    {
++        EscapePodEntity made = world.EscapePodManager.MakePodAt(where);
++
++        if (made == null)
++        {
++            return null;
++        }
++
++        // Assign before broadcasting: EscapePodEntitySpawner.IsOurs treats a pod with no players as
++        // the local player's, so every client would move its own EscapePod.main onto it.
++        world.EscapePodManager.SeatPlayerInPod(ownerId, made);
++
++        // Same packet a real join broadcasts; every client but the owner draws it as a wreck.
++        playerManager.SendPacketToAllPlayers(new SpawnEntities(made));
++
++        return made.Id.ToString();
++    }
++
++    public bool Seat(ushort playerId, string podId)
++    {
++        EscapePodEntity pod = PodWithId(podId);
++
++        if (pod == null)
++        {
++            return false;
++        }
++
++        Player player = Connected(playerId);
++
++        if (player == null)
++        {
++            // Disconnected since the roster was read.
++            return false;
++        }
++
++        world.EscapePodManager.SeatPlayerInPod(playerId, pod);
++
++        // SubRootId is where a rejoin places the player; the teleport moves them now.
++        player.SubRootId = pod.Id;
++        player.Teleport(pod.Transform.Position, Optional.Of(pod.Id));
++
++        return true;
++    }
++
++    public bool RemovePod(string id)
++    {
++        EscapePodEntity pod = PodWithId(id);
++
++        if (pod == null)
++        {
++            return false;
++        }
++
++        // Forget first, so the next join is never assigned to the removed pod.
++        world.EscapePodManager.ForgetPod(pod.Id);
++        world.WorldEntityManager.RemoveGlobalRootEntity(pod.Id);
++
++        // Clients remove the wreck. A client whose own pod this was no longer has the id, because
++        // EscapePodEntitySpawner re-tags EscapePod.main when it moves it.
++        playerManager.SendPacketToAllPlayers(new EntityDestroyed(pod.Id));
++
++        return true;
++    }
++
++    private EscapePodEntity PodWithId(string id)
++    {
++        foreach (EscapePodEntity pod in world.EntityRegistry.GetEntities<EscapePodEntity>())
++        {
++            if (pod.Id.ToString() == id)
++            {
++                return pod;
++            }
++        }
++
++        return null;
++    }
++
++    private Player Connected(ushort playerId)
++    {
++        foreach (Player player in playerManager.GetConnectedPlayers())
++        {
++            if (player.Id == playerId)
++            {
++                return player;
++            }
++        }
++
++        return null;
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/LmsTournament.cs b/Nitrox.Server.Subnautica/Models/GameLogic/LmsTournament.cs
+new file mode 100644
+index 0000000..854573c
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/LmsTournament.cs
+@@ -0,0 +1,239 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Reflection;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic;
++using Nitrox.Model.Subnautica.Tournament;
++using Nitrox.Server.Subnautica.Models.Serialization.World;
++using Timer = System.Timers.Timer;
++
++namespace Nitrox.Server.Subnautica.Models.GameLogic;
++
++/// <summary>
++///     Runs the tournament if the mod's <c>Lms.Server.dll</c> is installed beside the server.
++/// </summary>
++/// <remarks>
++///     The mod is loaded by name (like <c>NitroxPatcher.LmsHook</c> on the client), so the fork
++///     references none of its assemblies; when it is absent or broken the server runs as stock Nitrox.
++///     The match clock is <see cref="TimeKeeper"/>'s world time, which every client also reads and
++///     which stops while the server is paused.
++/// </remarks>
++public class LmsTournament
++{
++    /// <summary>The mod's server assembly, loaded by name.</summary>
++    private const string ModAssembly = "Lms.Server.dll";
++    private const string ModEntryPoint = "Lms.Server.LmsServerMod";
++
++    /// <summary>
++    ///     How often the match ticks; sets how smoothly the caster feed and follow camera move.
++    /// </summary>
++    /// <remarks>
++    ///     Must divide one second so the booth's one-second push lands on a tick. The mod's
++    ///     <c>CasterTrack.MaxLeadSeconds</c> must equal this; nothing checks it at build time.
++    /// </remarks>
++    private const double TickIntervalSeconds = 0.25;
++
++    private readonly PlayerManager playerManager;
++    private readonly TimeKeeper timeKeeper;
++    private readonly World world;
++    private readonly Timer timer;
++
++    private ILmsTournamentHost? host;
++    private bool looked;
++
++    public LmsTournament(PlayerManager playerManager, TimeKeeper timeKeeper, World world)
++    {
++        this.playerManager = playerManager;
++        this.timeKeeper = timeKeeper;
++        this.world = world;
++
++        timer = new Timer(TimeSpan.FromSeconds(TickIntervalSeconds).TotalMilliseconds) { AutoReset = true };
++        timer.Elapsed += delegate { Tick(); };
++    }
++
++    /// <summary>Whether a tournament is running on this server at all.</summary>
++    public bool IsLoaded => host != null;
++
++    private TimeSpan WorldNow => TimeSpan.FromSeconds(timeKeeper.ElapsedSeconds);
++
++    /// <summary>Loads the mod's server half and starts driving the match.</summary>
++    public void Start()
++    {
++        if (host != null)
++        {
++            return;
++        }
++
++        // Wire the seams before loading the mod: it may use them from its first tick or command.
++        LmsRoster.Source = Roster;
++        LmsPods.Seating = new LmsPodSeating(world, playerManager);
++        LmsGameModes.Modes = new LmsGameMode(playerManager);
++
++        // Also before loading, so a hit during the load is not applied by Nitrox's own PvP path.
++        LmsCombat.TournamentOwnsPvP = true;
++
++        host = Load();
++        looked = true;
++
++        if (host == null)
++        {
++            LmsRoster.Source = null;
++            LmsPods.Seating = null;
++            LmsGameModes.Modes = null;
++            LmsCombat.TournamentOwnsPvP = false;
++            return;
++        }
++
++        timer.Start();
++    }
++
++    public void Stop()
++    {
++        timer.Stop();
++        LmsRoster.Source = null;
++        LmsPods.Seating = null;
++        LmsGameModes.Modes = null;
++        LmsCombat.TournamentOwnsPvP = false;
++    }
++
++    /// <summary>Runs one <c>lms</c> verb and returns the line to say back.</summary>
++    public string Command(string? verb)
++    {
++        if (host == null)
++        {
++            // Distinguish "not installed" from "still starting".
++            return looked
++                ? $"No tournament is loaded on this server: {ModAssembly} is not installed beside it."
++                : "The server has not finished starting; ask again in a moment.";
++        }
++
++        try
++        {
++            return host.Command(verb, WorldNow);
++        }
++        catch (Exception ex)
++        {
++            Log.Error(ex, "The tournament refused a command");
++            return "The tournament failed to run that command; the server log says why.";
++        }
++    }
++
++    /// <summary>Tells one player what the zone is doing, once they can be told anything.</summary>
++    public void Greet(ushort playerId)
++    {
++        if (host == null)
++        {
++            return;
++        }
++
++        try
++        {
++            host.Greet(playerId, WorldNow);
++        }
++        catch (Exception ex)
++        {
++            Log.Error(ex, "The tournament failed to greet a joining player");
++        }
++    }
++
++    /// <summary>
++    ///     Advances the match. A throwing tick unloads the tournament for the session and logs once.
++    /// </summary>
++    /// <remarks>
++    ///     The seams stay wired, including <see cref="LmsCombat.TournamentOwnsPvP"/>, so stock PvP
++    ///     does not silently resume mid-round.
++    /// </remarks>
++    private void Tick()
++    {
++        try
++        {
++            host?.Tick(WorldNow);
++        }
++        catch (Exception ex)
++        {
++            timer.Stop();
++            host = null;
++            Log.Error(ex, "The tournament threw while running the match; it is stopped for this session");
++        }
++    }
++
++    private ILmsTournamentHost? Load()
++    {
++        string directory = AppContext.BaseDirectory;
++        string[] candidates = { Path.Combine(directory, "lib", ModAssembly), Path.Combine(directory, ModAssembly) };
++
++        foreach (string candidate in candidates)
++        {
++            if (!File.Exists(candidate))
++            {
++                continue;
++            }
++
++            try
++            {
++                Type? entry = Assembly.LoadFrom(candidate).GetType(ModEntryPoint);
++                MethodInfo? initialize = entry?.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static);
++                if (initialize == null)
++                {
++                    Log.Warn($"[LMS] {candidate} has no {ModEntryPoint}.Initialize; running as stock Nitrox.");
++                    return null;
++                }
++
++                object? loaded = initialize.Invoke(null,
++                    new object[] { directory, (Action<string>)Broadcast, (Action<ushort, string>)SendTo });
++
++                if (loaded is ILmsTournamentHost tournament)
++                {
++                    Log.Info($"[LMS] tournament host loaded from '{candidate}'");
++                    return tournament;
++                }
++
++                Log.Warn($"[LMS] {ModEntryPoint}.Initialize declined to start a tournament; running as stock Nitrox.");
++                return null;
++            }
++            catch (Exception ex)
++            {
++                Log.Error(ex, $"[LMS] {candidate} failed to load; running as stock Nitrox");
++                return null;
++            }
++        }
++
++        Log.Info($"[LMS] no {ModAssembly} beside the server; running as stock Nitrox. Looked in: {string.Join(", ", candidates)}");
++
++        return null;
++    }
++
++    /// <summary>Every connected player, read on demand for the mod's casting-booth feed.</summary>
++    /// <remarks>
++    ///     Stats are zero until a client sends its first <c>PlayerStats</c>; the row is still included.
++    /// </remarks>
++    private IReadOnlyList<LmsPlayerReading> Roster()
++    {
++        List<Player> players = playerManager.GetConnectedPlayers();
++        List<LmsPlayerReading> roster = new List<LmsPlayerReading>(players.Count);
++
++        foreach (Player player in players)
++        {
++            PlayerStatsData stats = player.Stats;
++
++            roster.Add(new LmsPlayerReading(player.Id, player.Name, !player.IsPermaDeath,
++                player.Position.X, player.Position.Y, player.Position.Z,
++                stats?.Health ?? 0, stats?.Oxygen ?? 0, stats?.Food ?? 0, stats?.Water ?? 0));
++        }
++
++        return roster;
++    }
++
++    private void Broadcast(string state)
++    {
++        playerManager.SendPacketToAllPlayers(new LmsMatchState(state));
++    }
++
++    private void SendTo(ushort playerId, string state)
++    {
++        if (playerManager.TryGetPlayerById(playerId, out Player player))
++        {
++            player.SendPacket(new LmsMatchState(state));
++        }
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PDAStateData.cs b/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PDAStateData.cs
+index dc57d30..72bb899 100644
+--- a/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PDAStateData.cs
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PDAStateData.cs
+@@ -1,4 +1,3 @@
+-using System.Collections.Generic;
+ using System.Linq;
+ using System.Runtime.Serialization;
+ using Nitrox.Model.DataStructures;
+@@ -6,87 +5,57 @@ using Nitrox.Model.Subnautica.DataStructures.GameLogic;
+ 
+ namespace Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
+ 
++/// <summary>
++/// The world's PDA state: the story log, and one <see cref="PlayerPDAProgress"/> per player.
++/// </summary>
++/// <remarks>
++/// The log stays world-scoped because story goals are: <c>ScheduleKeeper</c> and <c>StoryManager</c>
++/// read it to decide whether a goal has fired. Shared progress from older saves is not migrated.
++/// </remarks>
+ [DataContract]
+ public class PDAStateData
+ {
+     /// <summary>
+-    /// Gets or sets the KnownTech construct which powers the popup shown to the user when a new TechType is discovered ("New Creature Discovered!")
+-    /// The KnownTech construct uses both <see cref='KnownTechEntryAdd.EntryCategory.KNOWN'>KnownTech.knownTech</see> and <see cref='KnownTechEntryAdd.EntryCategory.ANALYZED'>KnownTech.analyzedTech</see>
+-    /// </summary>
+-    [DataMember(Order = 1)]
+-    public ThreadSafeList<NitroxTechType> KnownTechTypes { get; } = [];
+-
+-    [DataMember(Order = 2)]
+-    public ThreadSafeList<NitroxTechType> AnalyzedTechTypes { get; } = [];
+-
+-    /// <summary>
+-    /// Gets or sets the log of story events present in the PDA
++    /// Gets or sets the log of story events present in the PDA. World-scoped.
+     /// </summary>
++    /// <remarks>
++    /// Keeps Order 3 so existing saves load; orders 1, 2 and 4 to 7 are retired.
++    /// </remarks>
+     [DataMember(Order = 3)]
+     public ThreadSafeList<PDALogEntry> PdaLog { get; } = [];
+ 
+     /// <summary>
+-    /// Gets or sets the entries that show up the the PDA's Encyclopedia
+-    /// </summary>
+-    [DataMember(Order = 4)]
+-    public ThreadSafeList<string> EncyclopediaEntries { get; } = [];
+-
+-    /// <summary>
+-    /// The ids of the already scanned entities.
++    /// Each player's own progress, one row per player.
+     /// </summary>
+     /// <remarks>
+-    /// In Subnautica, this is a Dictionary, but the value is not used, the only important thing is whether a key is stored or not.
+-    /// We can therefore use it as a list.
++    /// A list, not a dictionary: <c>ThreadSafeDictionary</c> has no serializable member, so it would
++    /// silently save nothing.
+     /// </remarks>
+-    [DataMember(Order = 5)]
+-    public ThreadSafeSet<NitroxId> ScannerFragments { get; } = [];
++    [DataMember(Order = 8)]
++    public ThreadSafeList<PlayerPDAProgress> Progress { get; } = [];
+ 
+     /// <summary>
+-    /// Partially unlocked PDA entries (e.g. fragments)
++    /// This player's progress, made on first use.
+     /// </summary>
+-    [DataMember(Order = 6)]
+-    public ThreadSafeList<PDAEntry> ScannerPartial { get; } = [];
+-
+-    /// <summary>
+-    /// Fully unlocked PDA entries
+-    /// </summary>
+-    [DataMember(Order = 7)]
+-    public ThreadSafeList<NitroxTechType> ScannerComplete { get; } = [];
+-
+-    public void AddKnownTechType(NitroxTechType techType, List<NitroxTechType> partialTechTypesToRemove)
++    /// <remarks>
++    /// Locked across lookup and add so concurrent scans cannot create duplicate rows.
++    /// </remarks>
++    public PlayerPDAProgress For(string playerName)
+     {
+-        ScannerPartial.RemoveAll(entry => partialTechTypesToRemove.Contains(entry.TechType));
+-        if (!KnownTechTypes.Contains(techType))
+-        {
+-            KnownTechTypes.Add(techType);
+-        }
+-        else
++        lock (Progress)
+         {
+-            Log.Debug($"There was an attempt of adding a duplicated entry in the KnownTechTypes: [{techType.Name}]");
+-        }
+-    }
++            foreach (PlayerPDAProgress existing in Progress)
++            {
++                if (existing.Name == playerName)
++                {
++                    return existing;
++                }
++            }
+ 
+-    public void AddAnalyzedTechType(NitroxTechType techType)
+-    {
+-        if (!AnalyzedTechTypes.Contains(techType))
+-        {
+-            AnalyzedTechTypes.Add(techType);
+-        }
+-        else
+-        {
+-            Log.Debug($"There was an attempt of adding a duplicated entry in the AnalyzedTechTypes: [{techType.Name}]");
+-        }
+-    }
++            PlayerPDAProgress progress = new() { Name = playerName };
++            Progress.Add(progress);
+ 
+-    public void AddEncyclopediaEntry(string entry)
+-    {
+-        if (!EncyclopediaEntries.Contains(entry))
+-        {
+-            EncyclopediaEntries.Add(entry);
+-        }
+-        else
+-        {
+-            Log.Debug($"There was an attempt of adding a duplicated entry in the EncyclopediaEntries: [{entry}]");
++            return progress;
+         }
+     }
+ 
+@@ -102,43 +71,19 @@ public class PDAStateData
+         }
+     }
+ 
+-    public void AddScannerFragment(NitroxId id)
++    /// <summary>
++    /// What one joining player is told: their own progress, and the world's story log.
++    /// </summary>
++    public InitialPDAData GetInitialPDAData(string playerName)
+     {
+-        ScannerFragments.Add(id);
+-    }
++        PlayerPDAProgress progress = For(playerName);
+ 
+-    public void UpdateEntryUnlockedProgress(NitroxTechType techType, int unlockedAmount, bool fullyResearched)
+-    {
+-        if (fullyResearched)
+-        {
+-            ScannerPartial.RemoveAll(entry => entry.TechType.Equals(techType));
+-            ScannerComplete.Add(techType);
+-        }
+-        else
+-        {
+-            lock (ScannerPartial)
+-            {
+-                IEnumerable<PDAEntry> entries = ScannerPartial.Where(e => e.TechType.Equals(techType));
+-                if (entries.Any())
+-                {
+-                    entries.First().Unlocked = unlockedAmount;
+-                }
+-                else
+-                {
+-                    ScannerPartial.Add(new(techType, unlockedAmount));
+-                }
+-            }
+-        }
+-    }
+-
+-    public InitialPDAData GetInitialPDAData()
+-    {
+-        return new(KnownTechTypes.ToList(),
+-                   AnalyzedTechTypes.ToList(),
++        return new(progress.KnownTechTypes.ToList(),
++                   progress.AnalyzedTechTypes.ToList(),
+                    PdaLog.ToList(),
+-                   EncyclopediaEntries.ToList(),
+-                   ScannerFragments.ToList(),
+-                   ScannerPartial.ToList(),
+-                   ScannerComplete.ToList());
++                   progress.EncyclopediaEntries.ToList(),
++                   progress.ScannerFragments.ToList(),
++                   progress.ScannerPartial.ToList(),
++                   progress.ScannerComplete.ToList());
+     }
+ }
+diff --git a/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PlayerPDAProgress.cs b/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PlayerPDAProgress.cs
+new file mode 100644
+index 0000000..1941926
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/GameLogic/Unlockables/PlayerPDAProgress.cs
+@@ -0,0 +1,137 @@
++using System.Collections.Generic;
++using System.Linq;
++using System.Runtime.Serialization;
++using Nitrox.Model.DataStructures;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic;
++
++namespace Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
++
++/// <summary>
++/// One player's own PDA progress: what they have scanned, and what that has unlocked for them.
++/// </summary>
++/// <remarks>
++/// The PDA log is not here: story goals are world-scoped, so it stays on <see cref="PDAStateData"/>.
++/// </remarks>
++[DataContract]
++public class PlayerPDAProgress
++{
++    /// <summary>
++    /// Whose progress this is.
++    /// </summary>
++    /// <remarks>
++    /// A name, not an id: Nitrox player ids do not survive a reconnect.
++    /// </remarks>
++    [DataMember(Order = 7)]
++    public string Name { get; set; }
++
++    /// <summary>
++    /// Powers the "New Creature Discovered!" popup. Uses both
++    /// <see cref='KnownTechEntryAdd.EntryCategory.KNOWN'>KnownTech.knownTech</see> and
++    /// <see cref='KnownTechEntryAdd.EntryCategory.ANALYZED'>KnownTech.analyzedTech</see>.
++    /// </summary>
++    [DataMember(Order = 1)]
++    public ThreadSafeList<NitroxTechType> KnownTechTypes { get; } = [];
++
++    [DataMember(Order = 2)]
++    public ThreadSafeList<NitroxTechType> AnalyzedTechTypes { get; } = [];
++
++    /// <summary>
++    /// The entries that show up in this player's PDA Encyclopedia.
++    /// </summary>
++    [DataMember(Order = 3)]
++    public ThreadSafeList<string> EncyclopediaEntries { get; } = [];
++
++    /// <summary>
++    /// The ids of the entities this player has already scanned.
++    /// </summary>
++    /// <remarks>
++    /// In Subnautica this is a Dictionary whose value is never used, so a set is enough.
++    /// </remarks>
++    [DataMember(Order = 4)]
++    public ThreadSafeSet<NitroxId> ScannerFragments { get; } = [];
++
++    /// <summary>
++    /// Partially unlocked PDA entries (e.g. fragments).
++    /// </summary>
++    [DataMember(Order = 5)]
++    public ThreadSafeList<PDAEntry> ScannerPartial { get; } = [];
++
++    /// <summary>
++    /// Fully unlocked PDA entries.
++    /// </summary>
++    /// <remarks>
++    /// Only read by this player's initial sync; it does not affect world fragment spawning.
++    /// </remarks>
++    [DataMember(Order = 6)]
++    public ThreadSafeList<NitroxTechType> ScannerComplete { get; } = [];
++
++    public void AddKnownTechType(NitroxTechType techType, List<NitroxTechType> partialTechTypesToRemove)
++    {
++        if (partialTechTypesToRemove != null)
++        {
++            ScannerPartial.RemoveAll(entry => partialTechTypesToRemove.Contains(entry.TechType));
++        }
++
++        if (!KnownTechTypes.Contains(techType))
++        {
++            KnownTechTypes.Add(techType);
++        }
++        else
++        {
++            Log.Debug($"There was an attempt of adding a duplicated entry in the KnownTechTypes: [{techType.Name}]");
++        }
++    }
++
++    public void AddAnalyzedTechType(NitroxTechType techType)
++    {
++        if (!AnalyzedTechTypes.Contains(techType))
++        {
++            AnalyzedTechTypes.Add(techType);
++        }
++        else
++        {
++            Log.Debug($"There was an attempt of adding a duplicated entry in the AnalyzedTechTypes: [{techType.Name}]");
++        }
++    }
++
++    public void AddEncyclopediaEntry(string entry)
++    {
++        if (!EncyclopediaEntries.Contains(entry))
++        {
++            EncyclopediaEntries.Add(entry);
++        }
++        else
++        {
++            Log.Debug($"There was an attempt of adding a duplicated entry in the EncyclopediaEntries: [{entry}]");
++        }
++    }
++
++    public void AddScannerFragment(NitroxId id)
++    {
++        ScannerFragments.Add(id);
++    }
++
++    public void UpdateEntryUnlockedProgress(NitroxTechType techType, int unlockedAmount, bool fullyResearched)
++    {
++        if (fullyResearched)
++        {
++            ScannerPartial.RemoveAll(entry => entry.TechType.Equals(techType));
++            ScannerComplete.Add(techType);
++        }
++        else
++        {
++            lock (ScannerPartial)
++            {
++                IEnumerable<PDAEntry> entries = ScannerPartial.Where(e => e.TechType.Equals(techType));
++                if (entries.Any())
++                {
++                    entries.First().Unlocked = unlockedAmount;
++                }
++                else
++                {
++                    ScannerPartial.Add(new(techType, unlockedAmount));
++                }
++            }
++        }
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/KnownTechEntryAddProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/KnownTechEntryAddProcessor.cs
+index ecf60a9..43033b4 100644
+--- a/Nitrox.Server.Subnautica/Models/Packets/Processors/KnownTechEntryAddProcessor.cs
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/KnownTechEntryAddProcessor.cs
+@@ -4,30 +4,32 @@ using Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
+ 
+ namespace Nitrox.Server.Subnautica.Models.Packets.Processors
+ {
++    /// <summary>
++    ///     Records an unlock in the scanning player's own progress. Deliberately not relayed: blueprints
++    ///     are earned per player.
++    /// </summary>
+     public class KnownTechEntryAddProcessor : AuthenticatedPacketProcessor<KnownTechEntryAdd>
+     {
+-        private readonly PlayerManager playerManager;
+         private readonly PDAStateData pdaStateData;
+ 
+-        public KnownTechEntryAddProcessor(PlayerManager playerManager, PDAStateData pdaStateData)
++        public KnownTechEntryAddProcessor(PDAStateData pdaStateData)
+         {
+-            this.playerManager = playerManager;
+             this.pdaStateData = pdaStateData;
+         }
+ 
+         public override void Process(KnownTechEntryAdd packet, Player player)
+         {
++            PlayerPDAProgress progress = pdaStateData.For(player.Name);
++
+             switch (packet.Category)
+             {
+                 case KnownTechEntryAdd.EntryCategory.KNOWN:
+-                    pdaStateData.AddKnownTechType(packet.TechType, packet.PartialTechTypesToRemove);
++                    progress.AddKnownTechType(packet.TechType, packet.PartialTechTypesToRemove);
+                     break;
+                 case KnownTechEntryAdd.EntryCategory.ANALYZED:
+-                    pdaStateData.AddAnalyzedTechType(packet.TechType);
++                    progress.AddAnalyzedTechType(packet.TechType);
+                     break;
+             }
+-
+-            playerManager.SendPacketToOtherPlayers(packet, player);
+         }
+     }
+ }
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/LmsPlayerReportProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/LmsPlayerReportProcessor.cs
+new file mode 100644
+index 0000000..902fc53
+--- /dev/null
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/LmsPlayerReportProcessor.cs
+@@ -0,0 +1,20 @@
++using Nitrox.Model.DataStructures.GameLogic;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Model.Subnautica.Tournament;
++using Nitrox.Server.Subnautica.Models.Packets.Processors.Core;
++
++namespace Nitrox.Server.Subnautica.Models.Packets.Processors;
++
++/// <summary>
++///     Hands a tournament client's report about itself to the mod via <see cref="LmsPlayerReportRelay"/>.
++///     Server-only; not forwarded to other players.
++/// </summary>
++public class LmsPlayerReportProcessor : AuthenticatedPacketProcessor<LmsPlayerReport>
++{
++    public override void Process(LmsPlayerReport packet, Player player)
++    {
++        // Identity and admin permission come from the server, never the packet: some reports ask
++        // to change the match.
++        LmsPlayerReportRelay.Publish(player.Id, player.Permissions >= Perms.ADMIN, packet.Report);
++    }
++}
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAEncyclopediaEntryAddProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAEncyclopediaEntryAddProcessor.cs
+index afba022..9e75cd4 100644
+--- a/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAEncyclopediaEntryAddProcessor.cs
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAEncyclopediaEntryAddProcessor.cs
+@@ -4,21 +4,22 @@ using Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
+ 
+ namespace Nitrox.Server.Subnautica.Models.Packets.Processors
+ {
++    /// <summary>
++    ///     Records an encyclopedia entry for the scanning player only; not relayed, as it would reveal
++    ///     what they found.
++    /// </summary>
+     public class PDAEncyclopediaEntryAddProcessor : AuthenticatedPacketProcessor<PDAEncyclopediaEntryAdd>
+     {
+-        private readonly PlayerManager playerManager;
+         private readonly PDAStateData pdaStateData;
+ 
+-        public PDAEncyclopediaEntryAddProcessor(PlayerManager playerManager, PDAStateData pdaStateData)
++        public PDAEncyclopediaEntryAddProcessor(PDAStateData pdaStateData)
+         {
+-            this.playerManager = playerManager;
+             this.pdaStateData = pdaStateData;
+         }
+ 
+         public override void Process(PDAEncyclopediaEntryAdd packet, Player player)
+         {
+-            pdaStateData.AddEncyclopediaEntry(packet.Key);
+-            playerManager.SendPacketToOtherPlayers(packet, player);
++            pdaStateData.For(player.Name).AddEncyclopediaEntry(packet.Key);
+         }
+     }
+ }
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAScanFinishedPacketProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAScanFinishedPacketProcessor.cs
+index 83a601a..0694bd1 100644
+--- a/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAScanFinishedPacketProcessor.cs
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/PDAScanFinishedPacketProcessor.cs
+@@ -5,6 +5,14 @@ using Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
+ 
+ namespace Nitrox.Server.Subnautica.Models.Packets.Processors;
+ 
++/// <summary>
++///     Records scan progress for the scanning player, and still relays the packet: it is the only
++///     way other clients learn the scanned fragment was destroyed.
++/// </summary>
++/// <remarks>
++///     <c>WorldEntityManager.TryDestroyEntity</c> broadcasts nothing. The client's
++///     <c>PDAScanFinishedProcessor</c> applies only the entity change, not the sender's progress.
++/// </remarks>
+ public class PDAScanFinishedPacketProcessor : AuthenticatedPacketProcessor<PDAScanFinished>
+ {
+     private readonly PlayerManager playerManager;
+@@ -20,13 +28,15 @@ public class PDAScanFinishedPacketProcessor : AuthenticatedPacketProcessor<PDASc
+ 
+     public override void Process(PDAScanFinished packet, Player player)
+     {
++        PlayerPDAProgress progress = pdaStateData.For(player.Name);
++
+         if (!packet.WasAlreadyResearched)
+         {
+-            pdaStateData.UpdateEntryUnlockedProgress(packet.TechType, packet.UnlockedAmount, packet.FullyResearched);
++            progress.UpdateEntryUnlockedProgress(packet.TechType, packet.UnlockedAmount, packet.FullyResearched);
+         }
++
+         playerManager.SendPacketToOtherPlayers(packet, player);
+ 
+-        
+         if (packet.Id != null)
+         {
+             if (packet.Destroy)
+@@ -35,7 +45,7 @@ public class PDAScanFinishedPacketProcessor : AuthenticatedPacketProcessor<PDASc
+             }
+             else
+             {
+-                pdaStateData.AddScannerFragment(packet.Id);
++                progress.AddScannerFragment(packet.Id);
+             }
+         }
+     }
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/PlayerSyncFinishedProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/PlayerSyncFinishedProcessor.cs
+index 17262ca..ef091d1 100644
+--- a/Nitrox.Server.Subnautica/Models/Packets/Processors/PlayerSyncFinishedProcessor.cs
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/PlayerSyncFinishedProcessor.cs
+@@ -7,11 +7,13 @@ namespace Nitrox.Server.Subnautica.Models.Packets.Processors
+     {
+         private readonly PlayerManager playerManager;
+         private readonly JoiningManager joiningManager;
++        private readonly LmsTournament tournament;
+ 
+-        public PlayerSyncFinishedProcessor(PlayerManager playerManager, JoiningManager joiningManager)
++        public PlayerSyncFinishedProcessor(PlayerManager playerManager, JoiningManager joiningManager, LmsTournament tournament)
+         {
+             this.playerManager = playerManager;
+             this.joiningManager = joiningManager;
++            this.tournament = tournament;
+         }
+ 
+         public override void Process(PlayerSyncFinished packet, Player player)
+@@ -23,6 +25,10 @@ namespace Nitrox.Server.Subnautica.Models.Packets.Processors
+             }
+ 
+             joiningManager.SyncFinishedCallback?.Invoke();
++
++            // Tell the joiner the zone state now rather than waiting for the slow heartbeat; this is
++            // the first moment the client can act on it.
++            tournament.Greet(player.Id);
+         }
+     }
+ }
+diff --git a/Nitrox.Server.Subnautica/Models/Packets/Processors/PvPAttackProcessor.cs b/Nitrox.Server.Subnautica/Models/Packets/Processors/PvPAttackProcessor.cs
+index c036353..227becc 100644
+--- a/Nitrox.Server.Subnautica/Models/Packets/Processors/PvPAttackProcessor.cs
++++ b/Nitrox.Server.Subnautica/Models/Packets/Processors/PvPAttackProcessor.cs
+@@ -1,5 +1,6 @@
+ using System.Collections.Generic;
+ using Nitrox.Model.Serialization;
++using Nitrox.Model.Subnautica.Tournament;
+ using Nitrox.Server.Subnautica.Models.Packets.Processors.Core;
+ using Nitrox.Server.Subnautica.Models.GameLogic;
+ 
+@@ -25,6 +26,11 @@ public class PvPAttackProcessor : AuthenticatedPacketProcessor<PvPAttack>
+ 
+     public override void Process(PvPAttack packet, Player player)
+     {
++        // The tournament judges strikes itself; relaying here too would apply the hit twice.
++        if (LmsCombat.TournamentOwnsPvP)
++        {
++            return;
++        }
+         if (!serverConfig.PvPEnabled)
+         {
+             return;
+diff --git a/Nitrox.Server.Subnautica/Models/Serialization/World/WorldPersistence.cs b/Nitrox.Server.Subnautica/Models/Serialization/World/WorldPersistence.cs
+index 7700418..3b5380b 100644
+--- a/Nitrox.Server.Subnautica/Models/Serialization/World/WorldPersistence.cs
++++ b/Nitrox.Server.Subnautica/Models/Serialization/World/WorldPersistence.cs
+@@ -151,7 +151,6 @@ public class WorldPersistence
+         {
+             SimulationOwnershipData = new SimulationOwnershipData(),
+             PlayerManager = new PlayerManager(pWorldData.PlayerData.GetPlayers(), config),
+-            EscapePodManager = new EscapePodManager(entityRegistry, randomStart, seed),
+             EntityRegistry = entityRegistry,
+             GameData = pWorldData.WorldData.GameData,
+             GameMode = gameMode,
+@@ -173,13 +172,16 @@ public class WorldPersistence
+             protoBufSerializer,
+             NitroxServiceLocator.LocateService<IEntityBootstrapperManager>(),
+             NitroxServiceLocator.LocateService<Dictionary<string, PrefabPlaceholdersGroupAsset>>(),
+-            pWorldData.WorldData.GameData.PDAState,
+             randomSpawnSpoofer,
+             world.Seed
+         );
+ 
+         world.WorldEntityManager = new WorldEntityManager(world.EntityRegistry, world.BatchEntitySpawner, world.PlayerManager);
+ 
++        // Needs the world entity manager: escape pods are GlobalRootEntities, and the save is written
++        // from that manager's collection, so a pod registered only with the entity registry is never saved.
++        world.EscapePodManager = new EscapePodManager(entityRegistry, world.WorldEntityManager, randomStart, seed);
++
+         world.BuildingManager = new BuildingManager(world.EntityRegistry, world.WorldEntityManager, config);
+ 
+         ISimulationWhitelist simulationWhitelist = NitroxServiceLocator.LocateService<ISimulationWhitelist>();
+diff --git a/Nitrox.Server.Subnautica/Server.cs b/Nitrox.Server.Subnautica/Server.cs
+index 0591b4a..d1ab32d 100644
+--- a/Nitrox.Server.Subnautica/Server.cs
++++ b/Nitrox.Server.Subnautica/Server.cs
+@@ -14,6 +14,7 @@ using Nitrox.Model.DataStructures.GameLogic;
+ using Nitrox.Model.Serialization;
+ using Nitrox.Model.Server;
+ using Nitrox.Server.Subnautica.Models.GameLogic.Entities;
++using Nitrox.Server.Subnautica.Models.GameLogic.Unlockables;
+ using Nitrox.Server.Subnautica.Models.Serialization;
+ using Nitrox.Server.Subnautica.Models.Serialization.World;
+ using Timer = System.Timers.Timer;
+@@ -29,6 +30,7 @@ public class Server
+     private readonly World world;
+     private readonly WorldEntityManager worldEntityManager;
+     private readonly EntityRegistry entityRegistry;
++    private readonly Models.GameLogic.LmsTournament tournament;
+ 
+     private CancellationTokenSource serverCancelSource;
+ 
+@@ -43,7 +45,7 @@ public class Server
+ 
+     public event Action<int>? PlayerCountChanged;
+ 
+-    public Server(WorldPersistence worldPersistence, World world, SubnauticaServerConfig serverConfig, Models.Communication.NitroxServer server, WorldEntityManager worldEntityManager, EntityRegistry entityRegistry)
++    public Server(WorldPersistence worldPersistence, World world, SubnauticaServerConfig serverConfig, Models.Communication.NitroxServer server, WorldEntityManager worldEntityManager, EntityRegistry entityRegistry, Models.GameLogic.LmsTournament tournament)
+     {
+         this.worldPersistence = worldPersistence;
+         this.serverConfig = serverConfig;
+@@ -51,6 +53,7 @@ public class Server
+         this.world = world;
+         this.worldEntityManager = worldEntityManager;
+         this.entityRegistry = entityRegistry;
++        this.tournament = tournament;
+ 
+         Instance = this;
+ 
+@@ -88,13 +91,29 @@ public class Server
+          - Story goals completed: {world.GameData.StoryGoals.CompletedGoals.Count}
+          - Radio messages stored: {world.GameData.StoryGoals.RadioQueue.Count}
+          - World gamemode: {serverConfig.GameMode}
+-         - Encyclopedia entries: {world.GameData.PDAState.EncyclopediaEntries.Count}
+-         - Known tech: {world.GameData.PDAState.KnownTechTypes.Count}
++         - PDA progress: {PDAProgressSummary(world)}
+         """);
+ 
+         return builder.ToString();
+     }
+ 
++    /// <summary>
++    /// Summary of per-player PDA progress: how many players have any, and the largest known-tech set.
++    /// </summary>
++    private static string PDAProgressSummary(World world)
++    {
++        int players = 0;
++        int most = 0;
++
++        foreach (PlayerPDAProgress progress in world.GameData.PDAState.Progress)
++        {
++            players++;
++            most = Math.Max(most, progress.KnownTechTypes.Count);
++        }
++
++        return players == 0 ? "nobody has scanned anything" : $"{players} player(s), {most} known tech at most";
++    }
++
+     // TODO : Remove this method once server hosting/loading happens as a service (see '.NET Generic Host' on msdn)
+     public static SubnauticaServerConfig CreateOrLoadConfig()
+     {
+@@ -231,6 +250,10 @@ public class Server
+         Log.Info($"Autobackup: {(serverConfig.DisableAutoBackup || serverConfig.MaxBackups == 0 ? "DISABLED" : "ENABLED")} (Max Backups: {serverConfig.MaxBackups})");
+         Log.Info($"Loaded save\n{GetSaveSummary()}");
+ 
++        // Starts the tournament if the mod is installed. After loading (it reads the world clock) and
++        // before the pause (the match clock follows it).
++        tournament.Start();
++
+         PauseServer();
+ 
+         return true;
+@@ -255,6 +278,7 @@ public class Server
+ 
+         Log.Info("Nitrox Server Stopping...");
+         DisablePeriodicSaving();
++        tournament.Stop();
+ 
+         if (shouldSave)
+         {
+diff --git a/Nitrox.Server.Subnautica/SubnauticaServerAutoFacRegistrar.cs b/Nitrox.Server.Subnautica/SubnauticaServerAutoFacRegistrar.cs
+index 85a16ad..346ae62 100644
+--- a/Nitrox.Server.Subnautica/SubnauticaServerAutoFacRegistrar.cs
++++ b/Nitrox.Server.Subnautica/SubnauticaServerAutoFacRegistrar.cs
+@@ -47,6 +47,10 @@ namespace Nitrox.Server.Subnautica
+ 
+             containerBuilder.RegisterType<SubnauticaEntitySpawnPointFactory>().As<EntitySpawnPointFactory>().SingleInstance();
+ 
++            // The tournament mod host. Registered explicitly: it is neither a Command nor a packet
++            // processor, so scanning does not find it. A no-op when the mod is not installed.
++            containerBuilder.RegisterType<LmsTournament>().SingleInstance();
++
+             ResourceAssets resourceAssets = ResourceAssetsParser.Parse();
+ 
+             containerBuilder.Register(c => resourceAssets).SingleInstance();
+diff --git a/Nitrox.Test/Model/Networking/PacketFrameTest.cs b/Nitrox.Test/Model/Networking/PacketFrameTest.cs
+new file mode 100644
+index 0000000..85520c3
+--- /dev/null
++++ b/Nitrox.Test/Model/Networking/PacketFrameTest.cs
+@@ -0,0 +1,80 @@
++using LiteNetLib.Utils;
++using Nitrox.Model.DataStructures;
++using Nitrox.Model.DataStructures.Unity;
++using Nitrox.Model.Packets;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
++using Nitrox.Model.Subnautica.Packets;
++
++namespace Nitrox.Model.Networking;
++
++[TestClass]
++public class PacketFrameTest
++{
++    [ClassInitialize]
++    public static void InitSerializer(TestContext _) => Packet.InitSerializer();
++
++    [TestMethod]
++    public void A_packet_that_fits_a_datagram_is_framed_exactly_as_before()
++    {
++        ChatMessage packet = new(7, "hello");
++        byte[] plain = packet.Serialize();
++
++        NetDataReader reader = new(Frame(packet));
++
++        reader.GetInt().Should().Be(plain.Length);
++        reader.GetRemainingBytes().Should().Equal(plain);
++    }
++
++    [TestMethod]
++    public void A_small_packet_reads_back_as_itself()
++    {
++        ChatMessage packet = new(7, "hello");
++
++        Packet back = PacketFrame.Read(new NetDataReader(Frame(packet)));
++
++        back.Should().BeOfType<ChatMessage>().Which.Text.Should().Be("hello");
++    }
++
++    [TestMethod]
++    public void A_cell_reply_goes_out_deflated()
++    {
++        SpawnEntities packet = CellReply(500);
++
++        Frame(packet).Length.Should().BeLessThan(packet.Serialize().Length / 2);
++    }
++
++    [TestMethod]
++    public void A_deflated_cell_reply_reads_back_as_the_same_packet()
++    {
++        SpawnEntities packet = CellReply(500);
++
++        Packet back = PacketFrame.Read(new NetDataReader(Frame(packet)));
++
++        back.Serialize().Should().Equal(packet.Serialize());
++    }
++
++    private static byte[] Frame(Packet packet)
++    {
++        NetDataWriter writer = new();
++        PacketFrame.Write(writer, packet);
++        return writer.CopyData();
++    }
++
++    /// <summary>What a join is answered with: many entities that share a handful of class ids.</summary>
++    private static SpawnEntities CellReply(int count)
++    {
++        Random random = new(1);
++        AbsoluteEntityCell cell = new(new NitroxInt3(11, 18, 13), new NitroxInt3(0, 9, 7), 0);
++        List<Entity> entities = [];
++        for (int i = 0; i < count; i++)
++        {
++            NitroxVector3 at = new((float)random.NextDouble() * 160, (float)random.NextDouble() * -40, (float)random.NextDouble() * 160);
++            entities.Add(new WorldEntity(at, NitroxQuaternion.Identity, NitroxVector3.One, NitroxTechType.None, 0,
++                                         i % 3 == 0 ? "a17ef178-6952-4a91-8f66-44e1d3ca0575" : "154a88e1-1c61-4f6b-a6b8-7a3e8f8f0a3e",
++                                         true, new NitroxId(), null));
++        }
++
++        return new SpawnEntities(entities, [cell], true);
++    }
++}
+diff --git a/Nitrox.Test/Server/Serialization/WorldPersistenceTest.cs b/Nitrox.Test/Server/Serialization/WorldPersistenceTest.cs
+index 6ca1e8e..915b541 100644
+--- a/Nitrox.Test/Server/Serialization/WorldPersistenceTest.cs
++++ b/Nitrox.Test/Server/Serialization/WorldPersistenceTest.cs
+@@ -63,22 +63,30 @@ public class WorldPersistenceTest
+ 
+     private static void PDAStateTest(PDAStateData pdaState, PDAStateData pdaStateAfter)
+     {
+-        Assert.IsTrue(pdaState.KnownTechTypes.SequenceEqual(pdaStateAfter.KnownTechTypes));
+-        Assert.IsTrue(pdaState.AnalyzedTechTypes.SequenceEqual(pdaStateAfter.AnalyzedTechTypes));
+         AssertHelper.IsListEqual(pdaState.PdaLog.OrderBy(x => x.Key), pdaStateAfter.PdaLog.OrderBy(x => x.Key), (entry, entryAfter) =>
+         {
+             Assert.AreEqual(entry.Key, entryAfter.Key);
+             Assert.AreEqual(entry.Timestamp, entryAfter.Timestamp);
+         });
+-        Assert.IsTrue(pdaState.EncyclopediaEntries.SequenceEqual(pdaStateAfter.EncyclopediaEntries));
+-        Assert.IsTrue(pdaState.ScannerFragments.SequenceEqual(pdaStateAfter.ScannerFragments));
+-        AssertHelper.IsListEqual(pdaState.ScannerPartial.OrderBy(x => x.TechType.Name), pdaStateAfter.ScannerPartial.OrderBy(x => x.TechType.Name), (entry, entryAfter) =>
++
++        // Per-player progress must round-trip as a list: a ThreadSafeDictionary would serialize as nothing.
++        AssertHelper.IsListEqual(pdaState.Progress.OrderBy(x => x.Name), pdaStateAfter.Progress.OrderBy(x => x.Name), PlayerPDAProgressTest);
++    }
++
++    private static void PlayerPDAProgressTest(PlayerPDAProgress progress, PlayerPDAProgress progressAfter)
++    {
++        Assert.AreEqual(progress.Name, progressAfter.Name);
++        Assert.IsTrue(progress.KnownTechTypes.SequenceEqual(progressAfter.KnownTechTypes));
++        Assert.IsTrue(progress.AnalyzedTechTypes.SequenceEqual(progressAfter.AnalyzedTechTypes));
++        Assert.IsTrue(progress.EncyclopediaEntries.SequenceEqual(progressAfter.EncyclopediaEntries));
++        Assert.IsTrue(progress.ScannerFragments.SequenceEqual(progressAfter.ScannerFragments));
++        AssertHelper.IsListEqual(progress.ScannerPartial.OrderBy(x => x.TechType.Name), progressAfter.ScannerPartial.OrderBy(x => x.TechType.Name), (entry, entryAfter) =>
+         {
+             Assert.AreEqual(entry.TechType, entryAfter.TechType);
+             Assert.AreEqual(entry.Unlocked, entryAfter.Unlocked);
+         });
+ 
+-        Assert.IsTrue(pdaState.ScannerComplete.SequenceEqual(pdaStateAfter.ScannerComplete));
++        Assert.IsTrue(progress.ScannerComplete.SequenceEqual(progressAfter.ScannerComplete));
+     }
+ 
+     private static void StoryGoalTest(StoryGoalData storyGoal, StoryGoalData storyGoalAfter)
+diff --git a/NitroxClient/Communication/NetworkingLayer/LiteNetLib/LiteNetLibClient.cs b/NitroxClient/Communication/NetworkingLayer/LiteNetLib/LiteNetLibClient.cs
+index dc24917..d40d674 100644
+--- a/NitroxClient/Communication/NetworkingLayer/LiteNetLib/LiteNetLibClient.cs
++++ b/NitroxClient/Communication/NetworkingLayer/LiteNetLib/LiteNetLibClient.cs
+@@ -1,5 +1,4 @@
+ using System;
+-using System.Buffers;
+ using System.Reflection;
+ using System.Threading;
+ using System.Threading.Tasks;
+@@ -33,6 +32,15 @@ public class LiteNetLibClient : IClient
+     }
+     public Action<long> LatencyUpdateCallback;
+ 
++    /// <summary>
++    /// Round trip to the server in milliseconds, or -1 when there is no peer.
++    /// </summary>
++    /// <remarks>
++    /// Not the value <see cref="LatencyUpdateCallback"/> carries, which is the clock offset
++    /// (<c>NetPeer.RemoteTimeDelta</c>).
++    /// </remarks>
++    public int Ping => client.FirstPeer?.Ping ?? -1;
++
+     public LiteNetLibClient(PacketReceiver packetReceiver, INetworkDebugger networkDebugger = null)
+     {
+         this.packetReceiver = packetReceiver;
+@@ -76,10 +84,7 @@ public class LiteNetLibClient : IClient
+ 
+     public void Send(Packet packet)
+     {
+-        byte[] packetData = packet.Serialize();
+-        dataWriter.Reset();
+-        dataWriter.Put(packetData.Length);
+-        dataWriter.Put(packetData);
++        PacketFrame.Write(dataWriter, packet);
+ 
+         networkDebugger?.PacketSent(packet, dataWriter.Length);
+         client.SendToAll(dataWriter, (byte)packet.UdpChannel, NitroxDeliveryMethod.ToLiteNetLib(packet.DeliveryMethod));
+@@ -98,19 +103,10 @@ public class LiteNetLibClient : IClient
+ 
+     private void ReceivedNetworkData(NetPeer peer, NetDataReader reader, byte channel, DeliveryMethod deliveryMethod)
+     {
+-        int packetDataLength = reader.GetInt();
+-        byte[] packetData = ArrayPool<byte>.Shared.Rent(packetDataLength);
+-        try
+-        {
+-            reader.GetBytes(packetData, packetDataLength);
+-            Packet packet = Packet.Deserialize(packetData);
+-            packetReceiver.Add(packet);
+-            networkDebugger?.PacketReceived(packet, packetDataLength);
+-        }
+-        finally
+-        {
+-            ArrayPool<byte>.Shared.Return(packetData, true);
+-        }
++        int wireLength = reader.AvailableBytes;
++        Packet packet = PacketFrame.Read(reader);
++        packetReceiver.Add(packet);
++        networkDebugger?.PacketReceived(packet, wireLength);
+     }
+ 
+     private void Connected(NetPeer peer)
+diff --git a/NitroxClient/Communication/Packets/Processors/LmsMatchStateProcessor.cs b/NitroxClient/Communication/Packets/Processors/LmsMatchStateProcessor.cs
+new file mode 100644
+index 0000000..579c297
+--- /dev/null
++++ b/NitroxClient/Communication/Packets/Processors/LmsMatchStateProcessor.cs
+@@ -0,0 +1,20 @@
++using NitroxClient.Communication.Packets.Processors.Abstract;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Model.Subnautica.Tournament;
++
++namespace NitroxClient.Communication.Packets.Processors;
++
++/// <summary>
++///     Hands the tournament's zone to the mod, if one is loaded, via <see cref="LmsMatchStateRelay"/>.
++/// </summary>
++/// <remarks>
++///     Lives here because processors are found by scanning this assembly; the mod cannot be
++///     referenced, so this only publishes.
++/// </remarks>
++public class LmsMatchStateProcessor : ClientPacketProcessor<LmsMatchState>
++{
++    public override void Process(LmsMatchState packet)
++    {
++        LmsMatchStateRelay.Publish(packet.State);
++    }
++}
+diff --git a/NitroxClient/Communication/Packets/Processors/PDAScanFinishedProcessor.cs b/NitroxClient/Communication/Packets/Processors/PDAScanFinishedProcessor.cs
+index 0ec91ce..4ab0f9a 100644
+--- a/NitroxClient/Communication/Packets/Processors/PDAScanFinishedProcessor.cs
++++ b/NitroxClient/Communication/Packets/Processors/PDAScanFinishedProcessor.cs
+@@ -6,6 +6,14 @@ using Nitrox.Model.Subnautica.Packets;
+ 
+ namespace NitroxClient.Communication.Packets.Processors;
+ 
++/// <summary>
++///     Applies another player's scan to the world (the consumed fragment) but not to this PDA: scan
++///     progress is per player.
++/// </summary>
++/// <remarks>
++///     This packet is the only notice of the destroyed fragment; the server's <c>TryDestroyEntity</c>
++///     broadcasts nothing.
++/// </remarks>
+ public class PDAScanFinishedProcessor : ClientPacketProcessor<PDAScanFinished>
+ {
+     public override void Process(PDAScanFinished packet)
+@@ -14,24 +22,5 @@ public class PDAScanFinishedProcessor : ClientPacketProcessor<PDAScanFinished>
+         {
+             StoryManager.ScanCompleted(packet.Id, packet.Destroy);
+         }
+-        if (packet.WasAlreadyResearched)
+-        {
+-            return;
+-        }
+-        TechType packetTechType = packet.TechType.ToUnity();
+-        if (packet.FullyResearched)
+-        {
+-            PDAScanner.partial.RemoveAllFast(packetTechType, static (item, techType) => item.techType == techType);
+-            PDAScanner.complete.Add(packetTechType);
+-            return;
+-        }
+-        if (PDAScanner.GetPartialEntryByKey(packetTechType, out PDAScanner.Entry entry))
+-        {
+-            entry.unlocked = packet.UnlockedAmount;
+-        }
+-        else
+-        {
+-            PDAScanner.Add(packetTechType, packet.UnlockedAmount);
+-        }
+     }
+ }
+diff --git a/NitroxClient/Communication/Packets/Processors/SpawnEntitiesProcessor.cs b/NitroxClient/Communication/Packets/Processors/SpawnEntitiesProcessor.cs
+index 1dbdfa6..d94ee8b 100644
+--- a/NitroxClient/Communication/Packets/Processors/SpawnEntitiesProcessor.cs
++++ b/NitroxClient/Communication/Packets/Processors/SpawnEntitiesProcessor.cs
+@@ -23,6 +23,16 @@ public class SpawnEntitiesProcessor : ClientPacketProcessor<SpawnEntities>
+ 
+     public override void Process(SpawnEntities packet)
+     {
++        // Server reply time, recorded before spawning so the client's own spawn queue is measured
++        // separately.
++        if (CellTiming.Enabled && packet.SpawnedCells != null)
++        {
++            foreach (AbsoluteEntityCell answered in packet.SpawnedCells)
++            {
++                CellTiming.Replied(answered);
++            }
++        }
++
+         if (packet.ForceRespawn)
+         {
+             entities.CleanupExistingEntities(packet.Entities);
+diff --git a/NitroxClient/GameLogic/CellTiming.cs b/NitroxClient/GameLogic/CellTiming.cs
+new file mode 100644
+index 0000000..96f5059
+--- /dev/null
++++ b/NitroxClient/GameLogic/CellTiming.cs
+@@ -0,0 +1,373 @@
++using System.Collections.Generic;
++using Nitrox.Model.Subnautica.DataStructures.GameLogic;
++using UnityEngine;
++
++namespace NitroxClient.GameLogic;
++
++/// <summary>
++/// Diagnostic that times the entity round trip per cell: request sent, server reply, fully spawned.
++/// </summary>
++/// <remarks>
++/// Also counts the two failures: a cell unloaded before its reply, and a cell never answered. Requests
++/// and replies pair exactly by <see cref="AbsoluteEntityCell"/>, since several cells are in flight at
++/// once at speed. Off unless <c>NITROX_LMS_CELL_TIMING</c> is set or the marker file exists.
++/// </remarks>
++public static class CellTiming
++{
++    /// <summary>How long a cell may go unanswered before it is counted as never answered.</summary>
++    /// <remarks>
++    /// Deliberately far past anything playable: a level-0 cell takes about 5 s to cross swimming,
++    /// 1.4 s on a Seaglide.
++    /// </remarks>
++    private const float GiveUpAfterSeconds = 10f;
++
++    /// <summary>How often the summary line is written, alongside the per-cell lines.</summary>
++    private const float SummaryEverySeconds = 15f;
++
++    private static readonly Dictionary<AbsoluteEntityCell, Sample> InFlight = [];
++
++    /// <summary>
++    /// Send time of each cell given up on, so a reply that still arrives counts as late, not lost.
++    /// </summary>
++    private static readonly Dictionary<AbsoluteEntityCell, float> GaveUpOn = [];
++
++    private static bool? enabled;
++    private static float lastSummaryAt;
++    private static Vector3 wasAt;
++    private static float speed;
++
++    // Totals since the last summary.
++    private static int replied;
++    private static float replyTotal;
++    private static float replyWorst;
++    private static int spawned;
++    private static float spawnTotal;
++    private static float spawnWorst;
++    private static int unloadedFirst;
++    private static int neverAnswered;
++    private static int late;
++    private static float lateWorst;
++
++    /// <summary>The file that turns this on, beside this assembly. See <see cref="Enabled"/>.</summary>
++    private const string MarkerFile = "lms-cell-timing";
++
++    /// <summary>
++    /// Whether timing is on. Decided once per session.
++    /// </summary>
++    /// <remarks>
++    /// The environment variable does not reach a game started by Steam, so a marker file beside
++    /// NitroxClient (the launcher's <c>lib/net472</c>) also turns it on; see <see cref="Places"/>.
++    /// </remarks>
++    public static bool Enabled
++    {
++        get
++        {
++            if (enabled.HasValue)
++            {
++                return enabled.Value;
++            }
++
++            string why = Decide();
++            enabled = why != null;
++
++            // Log either way, so "off" is never mistaken for "broken", and say where it looked.
++            if (enabled.Value)
++            {
++                Log.Info($"[LMS] cell timing ON ({why}). A line per cell and a summary every " +
++                         $"{SummaryEverySeconds:0}s.");
++            }
++            else
++            {
++                Log.Info($"[LMS] cell timing off. Set NITROX_LMS_CELL_TIMING, or touch " +
++                         $"'{MarkerFile}' in one of: {string.Join(", ", Places())}");
++            }
++
++            return enabled.Value;
++        }
++    }
++
++    /// <summary>
++    /// Directories checked for the marker file: beside NitroxClient (the launcher's <c>lib/net472</c>),
++    /// then the game's base directory.
++    /// </summary>
++    private static IEnumerable<string> Places()
++    {
++        string beside = null;
++
++        try
++        {
++            beside = System.IO.Path.GetDirectoryName(
++                System.Reflection.Assembly.GetExecutingAssembly().Location);
++        }
++        catch (System.Exception)
++        {
++            // A dynamic assembly has no location; fall through to the other place.
++        }
++
++        if (!string.IsNullOrEmpty(beside))
++        {
++            yield return beside;
++        }
++
++        string game = System.AppDomain.CurrentDomain.BaseDirectory;
++        if (!string.IsNullOrEmpty(game) && game != beside)
++        {
++            yield return game;
++        }
++    }
++
++    /// <summary>Why it is on, or null. The reason is what goes in the log.</summary>
++    private static string Decide()
++    {
++        if (!string.IsNullOrEmpty(
++                System.Environment.GetEnvironmentVariable("NITROX_LMS_CELL_TIMING")))
++        {
++            return "NITROX_LMS_CELL_TIMING";
++        }
++
++        foreach (string place in Places())
++        {
++            try
++            {
++                if (System.IO.File.Exists(System.IO.Path.Combine(place, MarkerFile)))
++                {
++                    return System.IO.Path.Combine(place, MarkerFile);
++                }
++            }
++            catch (System.Exception)
++            {
++                // An unreadable directory is not worth crashing a diagnostic.
++            }
++        }
++
++        return null;
++    }
++
++    /// <summary>A cell has just gone out on a <c>CellVisibilityChanged</c>.</summary>
++    /// <remarks>
++    /// Stamped at send, not at <c>CellLoaded</c>, so the 50 ms batching window is inside the measurement.
++    /// </remarks>
++    public static void Sent(AbsoluteEntityCell cell)
++    {
++        if (!Enabled)
++        {
++            return;
++        }
++
++        // Overwrite: a cell reloaded within one reply's lifetime is waiting on the newer request.
++        InFlight[cell] = new Sample(Time.realtimeSinceStartup, speed);
++        GaveUpOn.Remove(cell);
++    }
++
++    /// <summary>The server's answer has arrived for this cell, before anything is spawned.</summary>
++    /// <remarks>
++    /// The gap between this and <see cref="Spawned"/> is the client's own spawn queue.
++    /// </remarks>
++    public static void Replied(AbsoluteEntityCell cell)
++    {
++        if (!Enabled)
++        {
++            return;
++        }
++
++        if (GaveUpOn.TryGetValue(cell, out float sentAt))
++        {
++            GaveUpOn.Remove(cell);
++            float after = Time.realtimeSinceStartup - sentAt;
++
++            late++;
++            lateWorst = Mathf.Max(lateWorst, after);
++
++            Log.Warn($"[LMS] LATE reply cell={Describe(cell)} in={after * 1000f:0} ms");
++            return;
++        }
++
++        if (!InFlight.TryGetValue(cell, out Sample sample) || sample.RepliedAt > 0f)
++        {
++            return;
++        }
++
++        float now = Time.realtimeSinceStartup;
++        float delta = now - sample.SentAt;
++
++        InFlight[cell] = sample.WithReply(now);
++
++        replied++;
++        replyTotal += delta;
++        replyWorst = Mathf.Max(replyWorst, delta);
++
++        Log.Info($"[LMS] reply cell={Describe(cell)} in={delta * 1000f:0} ms " +
++                 $"at={sample.Speed:0.0} m/s");
++    }
++
++    /// <summary>Everything the cell had is in the world: the end of the whole trip.</summary>
++    public static void Spawned(AbsoluteEntityCell cell)
++    {
++        if (!Enabled || !InFlight.TryGetValue(cell, out Sample sample))
++        {
++            return;
++        }
++
++        InFlight.Remove(cell);
++
++        float total = Time.realtimeSinceStartup - sample.SentAt;
++        float queue = sample.RepliedAt > 0f ? Time.realtimeSinceStartup - sample.RepliedAt : -1f;
++
++        spawned++;
++        spawnTotal += total;
++        spawnWorst = Mathf.Max(spawnWorst, total);
++
++        Log.Info($"[LMS] spawned cell={Describe(cell)} total={total * 1000f:0} ms " +
++                 $"queue={(queue < 0f ? "?" : $"{queue * 1000f:0}")} ms at={sample.Speed:0.0} m/s");
++    }
++
++    /// <summary>
++    /// The client has dropped this cell while a reply was still owed.
++    /// </summary>
++    /// <remarks>
++    /// The late reply then throws <c>OptionalEmptyException&lt;GameObject&gt;</c>. Counted separately
++    /// so it cannot hide in the averages.
++    /// </remarks>
++    public static void Unloaded(AbsoluteEntityCell cell)
++    {
++        if (!Enabled || !InFlight.TryGetValue(cell, out Sample sample))
++        {
++            return;
++        }
++
++        InFlight.Remove(cell);
++        unloadedFirst++;
++
++        float waited = Time.realtimeSinceStartup - sample.SentAt;
++
++        Log.Warn($"[LMS] MISS unloaded-first cell={Describe(cell)} " +
++                 $"waited={waited * 1000f:0} ms at={sample.Speed:0.0} m/s");
++    }
++
++    /// <summary>
++    /// Called once a frame from <c>Terrain.UpdateVisibility</c>: the speed, the give-ups, the summary.
++    /// </summary>
++    /// <remarks>
++    /// Speed is the streaming centre's smoothed movement, so it works in any vehicle or free camera.
++    /// </remarks>
++    public static void Tick(Vector3 streamingCentre)
++    {
++        if (!Enabled)
++        {
++            return;
++        }
++
++        float dt = Time.deltaTime;
++        if (dt > 0f)
++        {
++            float instant = Vector3.Distance(streamingCentre, wasAt) / dt;
++            speed = Mathf.Lerp(speed, instant, Mathf.Clamp01(dt * 4f));
++        }
++
++        wasAt = streamingCentre;
++
++        GiveUp();
++        Summarise();
++    }
++
++    /// <summary>
++    /// Counts cells with no reply within <see cref="GiveUpAfterSeconds"/> as never answered, and
++    /// remembers them in <see cref="GaveUpOn"/> so a later reply counts as late.
++    /// </summary>
++    private static void GiveUp()
++    {
++        float now = Time.realtimeSinceStartup;
++        List<AbsoluteEntityCell> lost = null;
++
++        foreach (KeyValuePair<AbsoluteEntityCell, Sample> waiting in InFlight)
++        {
++            if (now - waiting.Value.SentAt >= GiveUpAfterSeconds)
++            {
++                (lost ??= []).Add(waiting.Key);
++            }
++        }
++
++        if (lost == null)
++        {
++            return;
++        }
++
++        foreach (AbsoluteEntityCell cell in lost)
++        {
++            Sample sample = InFlight[cell];
++            InFlight.Remove(cell);
++            GaveUpOn[cell] = sample.SentAt;
++            neverAnswered++;
++
++            Log.Warn($"[LMS] MISS never-answered cell={Describe(cell)} " +
++                     $"waited={GiveUpAfterSeconds:0}s at={sample.Speed:0.0} m/s");
++        }
++    }
++
++    private static void Summarise()
++    {
++        float now = Time.realtimeSinceStartup;
++        if (now - lastSummaryAt < SummaryEverySeconds)
++        {
++            return;
++        }
++
++        lastSummaryAt = now;
++
++        if (replied == 0 && spawned == 0 && unloadedFirst == 0 && neverAnswered == 0 && late == 0)
++        {
++            return;
++        }
++
++        Log.Info($"[LMS] SUMMARY {SummaryEverySeconds:0}s: " +
++                 $"replies={replied} mean={Mean(replyTotal, replied)} worst={replyWorst * 1000f:0} ms | " +
++                 $"spawned={spawned} mean={Mean(spawnTotal, spawned)} worst={spawnWorst * 1000f:0} ms | " +
++                 $"MISS unloaded-first={unloadedFirst} never-answered={neverAnswered} | " +
++                 $"in flight={InFlight.Count} at={speed:0.0} m/s | " +
++                 $"late={late} worst={lateWorst * 1000f:0} ms");
++
++        replied = 0;
++        replyTotal = 0f;
++        replyWorst = 0f;
++        spawned = 0;
++        spawnTotal = 0f;
++        spawnWorst = 0f;
++        unloadedFirst = 0;
++        neverAnswered = 0;
++        late = 0;
++        lateWorst = 0f;
++    }
++
++    private static string Mean(float total, int count) =>
++        count == 0 ? "-" : $"{total / count * 1000f:0} ms";
++
++    private static string Describe(AbsoluteEntityCell cell) =>
++        $"{cell.BatchId.X},{cell.BatchId.Y},{cell.BatchId.Z}/" +
++        $"{cell.CellId.X},{cell.CellId.Y},{cell.CellId.Z}@L{cell.Level}";
++
++    private readonly struct Sample
++    {
++        public Sample(float sentAt, float speed)
++        {
++            SentAt = sentAt;
++            RepliedAt = 0f;
++            Speed = speed;
++        }
++
++        private Sample(float sentAt, float repliedAt, float speed)
++        {
++            SentAt = sentAt;
++            RepliedAt = repliedAt;
++            Speed = speed;
++        }
++
++        public float SentAt { get; }
++
++        public float RepliedAt { get; }
++
++        /// <summary>How fast the streaming centre was moving when the request went out.</summary>
++        public float Speed { get; }
++
++        public Sample WithReply(float at) => new(SentAt, at, Speed);
++    }
++}
+diff --git a/NitroxClient/GameLogic/InitialSync/PlayerPreferencesInitialSyncProcessor.cs b/NitroxClient/GameLogic/InitialSync/PlayerPreferencesInitialSyncProcessor.cs
+index 4c49bcf..89ee15f 100644
+--- a/NitroxClient/GameLogic/InitialSync/PlayerPreferencesInitialSyncProcessor.cs
++++ b/NitroxClient/GameLogic/InitialSync/PlayerPreferencesInitialSyncProcessor.cs
+@@ -130,6 +130,14 @@ public sealed class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
+             return false;
+         }
+ 
++        // Tournament HUD pings are client-local with no server identity, so skip them silently.
++        // Matched by name because the fork does not reference the mod.
++        if (pingInstance.name.StartsWith("Lms", StringComparison.Ordinal))
++        {
++            pingKey = string.Empty;
++            return false;
++        }
++
+         Log.Warn($"Couldn't find PingInstance identifier for {pingInstance.name} under {pingInstance.transform.parent}");
+         pingKey = string.Empty;
+         return false;
+diff --git a/NitroxClient/GameLogic/Spawning/EscapePodEntitySpawner.cs b/NitroxClient/GameLogic/Spawning/EscapePodEntitySpawner.cs
+index 76055a6..93f44c4 100644
+--- a/NitroxClient/GameLogic/Spawning/EscapePodEntitySpawner.cs
++++ b/NitroxClient/GameLogic/Spawning/EscapePodEntitySpawner.cs
+@@ -1,8 +1,11 @@
+ using System.Collections;
+ using Nitrox.Model.DataStructures;
+ using NitroxClient.Communication;
++using NitroxClient.Extensions;
+ using NitroxClient.GameLogic.FMOD;
+ using NitroxClient.GameLogic.Spawning.Abstract;
++using NitroxClient.GameLogic.Spawning.WorldEntities;
++using Nitrox.Model.Subnautica.Tournament;
+ using NitroxClient.GameLogic.Spawning.Metadata.Processor;
+ using NitroxClient.MonoBehaviours;
+ using NitroxClient.MonoBehaviours.CinematicController;
+@@ -34,12 +37,24 @@ public class EscapePodEntitySpawner : SyncEntitySpawner<EscapePodEntity>
+ 
+     protected override IEnumerator SpawnAsync(EscapePodEntity entity, TaskResult<Optional<GameObject>> result)
+     {
+-        SpawnSync(entity, result);
+-        return null;
++        if (IsOurs(entity))
++        {
++            SpawnSync(entity, result);
++            return null;
++        }
++
++        // Another player's pod: the game has only one real lifepod, so draw a wreck.
++        return SpawnWreck(entity, result);
+     }
+ 
+     protected override bool SpawnSync(EscapePodEntity entity, TaskResult<Optional<GameObject>> result)
+     {
++        if (!IsOurs(entity))
++        {
++            // Loading the wreck prefab yields, so it must take the async path.
++            return false;
++        }
++
+         SuppressEscapePodAwakeMethod = true;
+ 
+         GameObject escapePod = CreateNewEscapePod(entity);
+@@ -50,7 +65,79 @@ public class EscapePodEntitySpawner : SyncEntitySpawner<EscapePodEntity>
+         return true;
+     }
+ 
+-    protected override bool SpawnsOwnChildren(EscapePodEntity entity) => false;
++    /// <summary>
++    ///     Whether this pod is the local player's, and so gets the one real <c>EscapePod.main</c>.
++    /// </summary>
++    /// <remarks>
++    ///     <see cref="CreateNewEscapePod"/> moves <c>EscapePod.main</c> rather than instantiating a
++    ///     copy, so every other player's pod is drawn as a wreck. With a single shared pod this is
++    ///     always true.
++    /// </remarks>
++    private bool IsOurs(EscapePodEntity entity)
++    {
++        if (entity.Players.Count == 0)
++        {
++            // Unassigned: the pod being made for whoever is joining, so ours by default.
++            return true;
++        }
++
++        return localPlayer.PlayerId.HasValue && entity.Players.Contains(localPlayer.PlayerId.Value);
++    }
++
++    /// <summary>
++    ///     Puts a wrecked lifepod where somebody else's pod is.
++    /// </summary>
++    /// <remarks>
++    ///     Wreck prefabs have no <c>EscapePod</c> component, so nothing tries to become
++    ///     <c>EscapePod.main</c>. The variant is chosen from the pod id (<see cref="LmsPodWrecks"/>),
++    ///     so every client draws the same one.
++    /// </remarks>
++    private static IEnumerator SpawnWreck(EscapePodEntity entity, TaskResult<Optional<GameObject>> result)
++    {
++        string classId = LmsPodWrecks.For(entity.Id.ToString());
++
++        TaskResult<GameObject> prefabResult = new();
++        yield return DefaultWorldEntitySpawner.RequestPrefab(classId, prefabResult);
++
++        GameObject prefab = prefabResult.Get();
++        if (!prefab)
++        {
++            // Show nothing rather than fall back to a second real pod.
++            Log.Error($"[LMS] no wrecked lifepod prefab '{classId}' for pod {entity.Id}; it will not be shown.");
++            result.Set(Optional.Empty);
++            yield break;
++        }
++
++        // Not Object.Instantiate: PrefabDatabase prefabs are inactive templates. InstantiateWithId
++        // sets the id before any Awake runs and then activates the clone.
++        GameObject wreck = GameObjectExtensions.InstantiateWithId(prefab, entity.Id);
++
++        // Marks the wreck so pod metadata processing skips it.
++        wreck.EnsureComponent<LmsPodWreck>();
++
++        // Set up like GlobalRootEntitySpawner does: register with the cell manager (which parents it
++        // under the global root) before placing it, since the entity transform is local to that root.
++        LargeWorldEntity largeWorldEntity = wreck.EnsureComponent<LargeWorldEntity>();
++        largeWorldEntity.cellLevel = LargeWorldEntity.CellLevel.Global;
++
++        LargeWorld.main.streamer.cellManager.RegisterEntity(largeWorldEntity);
++        largeWorldEntity.Start();
++
++        wreck.transform.localPosition = entity.Transform.LocalPosition.ToUnity();
++        wreck.transform.localRotation = entity.Transform.LocalRotation.ToUnity();
++
++        // One line per pod, so whether and where a wreck was drawn is visible in the log.
++        Log.Info($"[LMS] another player's pod {entity.Id} drawn as '{classId}' at " +
++                 $"{wreck.transform.position}, active={wreck.activeInHierarchy}");
++
++        result.Set(Optional.Of(wreck));
++    }
++
++    /// <summary>
++    ///     Wrecks claim their children so none are spawned: no radio, medical cabinet, fabricator or
++    ///     locker. The local player's real pod still gets all four.
++    /// </summary>
++    protected override bool SpawnsOwnChildren(EscapePodEntity entity) => !IsOurs(entity);
+ 
+     private GameObject CreateNewEscapePod(EscapePodEntity escapePodEntity)
+     {
+@@ -60,7 +147,8 @@ public class EscapePodEntitySpawner : SyncEntitySpawner<EscapePodEntity>
+         GameObject escapePod = EscapePod.main.gameObject;
+         EscapePod pod = escapePod.GetComponent<EscapePod>();
+ 
+-        Object.DestroyImmediate(escapePod.GetComponent<NitroxEntity>()); // if template has a pre-existing NitroxEntity, remove.
++        // Keep the existing NitroxEntity: SetNewId only unmaps the old id from gameObjectsById when it
++        // finds the component, and a stale id would let destroying an old pod destroy this one.
+         NitroxEntity.SetNewId(escapePod, escapePodEntity.Id);
+ 
+         if (escapePod.TryGetComponent(out Rigidbody rigidbody))
+diff --git a/NitroxClient/GameLogic/Spawning/Metadata/Processor/EscapePodMetadataProcessor.cs b/NitroxClient/GameLogic/Spawning/Metadata/Processor/EscapePodMetadataProcessor.cs
+index c17c6db..e070a91 100644
+--- a/NitroxClient/GameLogic/Spawning/Metadata/Processor/EscapePodMetadataProcessor.cs
++++ b/NitroxClient/GameLogic/Spawning/Metadata/Processor/EscapePodMetadataProcessor.cs
+@@ -1,5 +1,6 @@
+ using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities.Metadata;
+ using NitroxClient.GameLogic.Spawning.Metadata.Processor.Abstract;
++using NitroxClient.MonoBehaviours;
+ using UnityEngine;
+ 
+ namespace NitroxClient.GameLogic.Spawning.Metadata.Processor;
+@@ -9,6 +10,12 @@ public class EscapePodMetadataProcessor : EntityMetadataProcessor<EscapePodMetad
+     // For metadata changes outside initial sync we only care about broken -> repaired
+     public override void ProcessMetadata(GameObject gameObject, EscapePodMetadata metadata)
+     {
++        if (gameObject.GetComponent<LmsPodWreck>())
++        {
++            // Another player's pod drawn as a wreck: scenery with no EscapePod component.
++            return;
++        }
++
+         if (!gameObject.TryGetComponent(out EscapePod pod))
+         {
+             Log.Error($"[{nameof(EscapePodMetadataProcessor)}] Could not get the EscapePod component from the provided gameobject.");
+diff --git a/NitroxClient/GameLogic/Terrain.cs b/NitroxClient/GameLogic/Terrain.cs
+index 9c1de29..dc8b729 100644
+--- a/NitroxClient/GameLogic/Terrain.cs
++++ b/NitroxClient/GameLogic/Terrain.cs
+@@ -50,6 +50,9 @@ public class Terrain
+ 
+         if (visibleCells.Contains(cell))
+         {
++            // A cell dropped while a reply is still owed surfaces as OptionalEmptyException<GameObject>.
++            CellTiming.Unloaded(cell);
++
+             visibleCells.Remove(cell);
+             removedCells.Add(cell);
+             cellsPendingSync = true;
+@@ -59,6 +62,9 @@ public class Terrain
+ 
+     public void AddFullySpawnedCell(AbsoluteEntityCell cell)
+     {
++        // End of the round trip. Both callers (empty cells and the spawn coroutine) route through here.
++        CellTiming.Spawned(cell);
++
+         if (visibleCells.Contains(cell))
+         {
+             fullySpawnedCells.Add((cell.BatchId.ToUnity(), cell.CellId.ToUnity(), cell.Level));
+@@ -72,6 +78,12 @@ public class Terrain
+ 
+     public void UpdateVisibility()
+     {
++        // Once a frame: camera speed, unanswered cells and the periodic summary.
++        if (CellTiming.Enabled && MainCamera.camera != null)
++        {
++            CellTiming.Tick(MainCamera.camera.transform.position);
++        }
++
+         bufferedTime += Time.deltaTime;
+         if (bufferedTime >= TIME_BUFFER)
+         {
+@@ -80,6 +92,15 @@ public class Terrain
+                 CellVisibilityChanged cellsChanged = new(multiplayerSession.Reservation.PlayerId, addedCells, removedCells);
+                 packetSender.Send(cellsChanged);
+ 
++                // Stamped at send rather than CellLoaded so the batching window is measured too.
++                if (CellTiming.Enabled)
++                {
++                    foreach (AbsoluteEntityCell added in addedCells)
++                    {
++                        CellTiming.Sent(added);
++                    }
++                }
++
+                 addedCells.Clear();
+                 removedCells.Clear();
+ 
+diff --git a/NitroxClient/MonoBehaviours/LmsPodWreck.cs b/NitroxClient/MonoBehaviours/LmsPodWreck.cs
+new file mode 100644
+index 0000000..22a517c
+--- /dev/null
++++ b/NitroxClient/MonoBehaviours/LmsPodWreck.cs
+@@ -0,0 +1,14 @@
++using UnityEngine;
++
++namespace NitroxClient.MonoBehaviours;
++
++/// <summary>
++///     Marks a wrecked lifepod standing in for another player's escape pod.
++/// </summary>
++/// <remarks>
++///     The wreck carries the pod's id but no <c>EscapePod</c> component, so
++///     <c>EscapePodMetadataProcessor</c> checks for this marker and skips it.
++/// </remarks>
++public class LmsPodWreck : MonoBehaviour
++{
++}
+diff --git a/NitroxPatcher/LmsHook.cs b/NitroxPatcher/LmsHook.cs
+new file mode 100644
+index 0000000..bc2fb00
+--- /dev/null
++++ b/NitroxPatcher/LmsHook.cs
+@@ -0,0 +1,133 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Reflection;
++using Nitrox.Model.Core;
++using NitroxClient.Communication.Abstract;
++using NitroxClient.Communication.NetworkingLayer.LiteNetLib;
++using Nitrox.Model.Subnautica.Packets;
++using Nitrox.Model.Subnautica.Tournament;
++
++namespace NitroxPatcher;
++
++/// <summary>
++///     Calls into the tournament mod once Nitrox is initialized.
++/// </summary>
++/// <remarks>
++///     The mod (<c>Lms.Game</c>) is loaded by name rather than referenced, so the fork builds and runs
++///     as stock Nitrox when the mod is not deployed.
++/// </remarks>
++internal static class LmsHook
++{
++    private const string ModAssemblyName = "Lms.Game";
++    private const string EntryTypeName = "Lms.Game.LmsMod";
++    private const string EntryMethodName = "Initialize";
++
++    internal static void Initialize()
++    {
++        List<string> searched = new List<string>();
++        string modAssemblyPath = null;
++
++        foreach (string directory in ProbeDirectories())
++        {
++            string candidate = Path.Combine(directory, ModAssemblyName + ".dll");
++            searched.Add(candidate);
++            if (File.Exists(candidate))
++            {
++                modAssemblyPath = candidate;
++                break;
++            }
++        }
++
++        if (modAssemblyPath == null)
++        {
++            // Name every path tried, so nobody deploys the mod to the wrong one.
++            Log.Info($"[LMS] {ModAssemblyName}.dll not found; running as stock Nitrox. Looked in: {string.Join(", ", searched)}");
++            return;
++        }
++
++        try
++        {
++            Assembly modAssembly = Assembly.LoadFrom(modAssemblyPath);
++            Type entryType = modAssembly.GetType(EntryTypeName, true);
++            MethodInfo entryMethod = entryType.GetMethod(EntryMethodName, BindingFlags.Public | BindingFlags.Static);
++            if (entryMethod == null)
++            {
++                throw new MissingMethodException(EntryTypeName, EntryMethodName);
++            }
++
++            // Before the handover, so a mod that reports immediately has somewhere to report to.
++            LmsReporting.Send = Report;
++
++            // The reverse direction: the mod asks and this answers.
++            LmsNetwork.Ping = ReadPing;
++
++            Log.Info($"[LMS] Handing over to {EntryTypeName}.{EntryMethodName} from '{modAssemblyPath}'");
++            entryMethod.Invoke(null, null);
++        }
++        catch (Exception ex)
++        {
++            // A failing mod must not take Nitrox with it; fall back to plain multiplayer.
++            Log.Error(ex, "[LMS] Failed to initialize the tournament mod; continuing without it.");
++        }
++    }
++
++    /// <summary>
++    ///     Sends one of the mod's reports about the local player to the server.
++    /// </summary>
++    /// <remarks>
++    ///     Lives here because the mod does not reference <c>NitroxClient</c>. The sender is resolved
++    ///     per send since the session scope is absent in the main menu and replaced on rejoin;
++    ///     failures are logged once and dropped.
++    /// </remarks>
++    private static void Report(string report)
++    {
++        try
++        {
++            NitroxServiceLocator.LocateService<IPacketSender>().Send(new LmsPlayerReport(report));
++        }
++        catch (Exception ex)
++        {
++            Log.WarnOnce($"[LMS] Could not send a player report: {ex.Message}");
++        }
++    }
++
++    /// <summary>
++    ///     The round trip to the server in milliseconds, or -1 when nothing can say.
++    /// </summary>
++    /// <remarks>
++    ///     Resolved per read, like <see cref="Report"/>. Returns -1 rather than 0 on failure because
++    ///     zero is a real reading on a listen server.
++    /// </remarks>
++    private static int ReadPing()
++    {
++        try
++        {
++            return NitroxServiceLocator.LocateService<IClient>() is LiteNetLibClient client
++                ? client.Ping
++                : -1;
++        }
++        catch (Exception)
++        {
++            // No session scope yet (main menu); not worth a log line every frame.
++            return -1;
++        }
++    }
++
++    /// <summary>
++    ///     Where the mod might be, best candidate first.
++    /// </summary>
++    private static IEnumerable<string> ProbeDirectories()
++    {
++        // Beside Nitrox's own assemblies in the launcher's lib/net472, where the mod is installed.
++        // Main.cs has already put the launcher path in the environment by now.
++        string launcherDirectory = Environment.GetEnvironmentVariable(NitroxUser.LAUNCHER_PATH_ENV_KEY, EnvironmentVariableTarget.Process);
++        if (!string.IsNullOrEmpty(launcherDirectory))
++        {
++            yield return Path.Combine(launcherDirectory, "lib", "net472");
++        }
++
++        // Beside this assembly, which is the game's Managed directory, not the Nitrox folder.
++        yield return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
++    }
++}
+diff --git a/NitroxPatcher/LmsSettings.cs b/NitroxPatcher/LmsSettings.cs
+new file mode 100644
+index 0000000..e8c38da
+--- /dev/null
++++ b/NitroxPatcher/LmsSettings.cs
+@@ -0,0 +1,103 @@
++using System;
++using System.Collections.Generic;
++using Nitrox.Model.Logger;
++using Nitrox.Model.Subnautica.Tournament;
++using NitroxClient.GameLogic.Settings;
++using UnityEngine.Events;
++
++namespace NitroxPatcher;
++
++/// <summary>
++///     Turns the tournament mod's declared <see cref="LmsPreferences"/> into options panel rows.
++/// </summary>
++/// <remarks>
++///     Lives here because the mod does not reference <c>NitroxClient</c>. The panel is rebuilt on
++///     every open but the manager outlives it, so each row is added only once.
++/// </remarks>
++internal static class LmsSettings
++{
++    internal static void Register(NitroxSettingsManager settings)
++    {
++        if (settings == null || (LmsPreferences.Preferences.Count == 0 && LmsPreferences.Buttons.Count == 0))
++        {
++            return;
++        }
++
++        try
++        {
++            foreach (LmsPreference preference in LmsPreferences.Preferences)
++            {
++                if (AlreadyAdded(settings, preference.Heading, preference.Label))
++                {
++                    continue;
++                }
++
++                settings.AddSetting(preference.Heading, Row(preference));
++            }
++
++            foreach (LmsPreferenceButton button in LmsPreferences.Buttons)
++            {
++                if (AlreadyAdded(settings, button.Heading, button.Label))
++                {
++                    continue;
++                }
++
++                Action pressed = button.Pressed ?? (() => { });
++                settings.AddSetting(button.Heading,
++                    new NitroxSettingsManager.Setting(button.Label, new UnityAction(pressed)));
++            }
++        }
++        catch (Exception ex)
++        {
++            // A broken tournament row must not break the rest of the options panel.
++            Log.Error(ex, "[LMS] Could not add the tournament's settings; the rest of the panel is unaffected.");
++        }
++    }
++
++    /// <summary>
++    ///     Builds a slider or toggle row. Like Nitrox's own settings, the callback writes the pref
++    ///     itself, then notifies the mod via <c>Changed</c>.
++    /// </summary>
++    private static NitroxSettingsManager.Setting Row(LmsPreference preference)
++    {
++        if (preference.IsSlider)
++        {
++            NitroxPref<float> pref = new(preference.Key, preference.Default);
++            Action<float> changed = preference.Changed ?? (_ => { });
++
++            return new NitroxSettingsManager.Setting(preference.Label, pref, new UnityAction<float>(value =>
++            {
++                pref.Value = value;
++                changed(value);
++            }), preference.Minimum, preference.Maximum, preference.Default, preference.Step,
++                SliderLabelMode.Float, "0.00");
++        }
++
++        NitroxPref<bool> toggle = new(preference.Key, preference.Default != 0f);
++        Action<float> toggled = preference.Changed ?? (_ => { });
++
++        return new NitroxSettingsManager.Setting(preference.Label, toggle, new UnityAction<bool>(value =>
++        {
++            toggle.Value = value;
++            toggled(value ? 1f : 0f);
++        }));
++    }
++
++    private static bool AlreadyAdded(NitroxSettingsManager settings, string heading, string label)
++    {
++        if (!settings.NitroxSettings.TryGetValue(heading, out List<NitroxSettingsManager.Setting> rows))
++        {
++            return false;
++        }
++
++        foreach (NitroxSettingsManager.Setting row in rows)
++        {
++            if (string.Equals(row.Label, label, StringComparison.Ordinal))
++            {
++                return true;
++            }
++        }
++
++        return false;
++    }
++}
+diff --git a/NitroxPatcher/Patcher.cs b/NitroxPatcher/Patcher.cs
+index 2c7ba3b..1ce6c48 100644
+--- a/NitroxPatcher/Patcher.cs
++++ b/NitroxPatcher/Patcher.cs
+@@ -121,6 +121,9 @@ internal static class Patcher
+ 
+         InitPatches();
+         ApplyNitroxBehaviours();
++
++        // Tournament mod: loaded by name, a no-op when absent (see LmsHook).
++        LmsHook.Initialize();
+     }
+ 
+     private static void InitPatches()
+diff --git a/NitroxPatcher/Patches/Dynamic/uGUI_SceneIntro_IntroSequence_Patch.cs b/NitroxPatcher/Patches/Dynamic/uGUI_SceneIntro_IntroSequence_Patch.cs
+index 8c4fc12..8987886 100644
+--- a/NitroxPatcher/Patches/Dynamic/uGUI_SceneIntro_IntroSequence_Patch.cs
++++ b/NitroxPatcher/Patches/Dynamic/uGUI_SceneIntro_IntroSequence_Patch.cs
+@@ -204,6 +204,7 @@ public sealed partial class uGUI_SceneIntro_IntroSequence_Patch : NitroxPatch, I
+     {
+         LiveMixin radioLiveMixin = EscapePod.main.radioSpawner.spawnedObj.GetComponent<Radio>().liveMixin;
+         float radioHealthBefore = radioLiveMixin.health;
++        float playerHealthBefore = Player.main.liveMixin.health;
+ 
+         uGuiSceneIntro.Stop(true);
+ 
+@@ -211,6 +212,8 @@ public sealed partial class uGUI_SceneIntro_IntroSequence_Patch : NitroxPatch, I
+         {
+             // EscapePod.DamageRadio() is called by GuiSceneIntro.Stop(true) but is undesired. We revert it here
+             radioLiveMixin.health = radioHealthBefore;
++            // Also revert the 20 health EscapePod.StopIntroCinematic() takes from a player at full health
++            Player.main.liveMixin.health = playerHealthBefore;
+         }
+ 
+         if (radioLiveMixin.IsFullHealth())
+diff --git a/NitroxPatcher/Patches/Persistent/uGUI_OptionsPanel_AddTabs_Patch.cs b/NitroxPatcher/Patches/Persistent/uGUI_OptionsPanel_AddTabs_Patch.cs
+index 59bac06..d3131e3 100644
+--- a/NitroxPatcher/Patches/Persistent/uGUI_OptionsPanel_AddTabs_Patch.cs
++++ b/NitroxPatcher/Patches/Persistent/uGUI_OptionsPanel_AddTabs_Patch.cs
+@@ -13,6 +13,10 @@ namespace NitroxPatcher.Patches.Persistent
+         public static void Postfix(uGUI_OptionsPanel __instance)
+         {
+             nitroxSettingsManager ??= Resolve<NitroxSettingsManager>(true);
++
++            // Tournament mod settings rows; idempotent and a no-op when the mod is absent.
++            LmsSettings.Register(nitroxSettingsManager);
++
+             int tabIndex = __instance.AddTab("Nitrox");
+             foreach (KeyValuePair<string, List<NitroxSettingsManager.Setting>> settingEntries in nitroxSettingsManager.NitroxSettings)
+             {
+-- 
+2.56.0
+

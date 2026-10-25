@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Renders the world's bathymetry from the terrain octrees to the mod's minimap PNG.
+
+Each pixel is the shallowest of a fixed ladder of depths that is solid: a depth band, not an exact
+height, which keeps it fast. Pixel (0,0) is world (-2048, -2048), +x right, +z down.
+
+usage:
+    ./scripts/make-minimap                  # writes docs/data/minimap.png
+    ./scripts/make-minimap --size 512       # slower, sharper
+"""
+import argparse
+import pathlib
+import sys
+import time
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import lms_terrain  # noqa: E402
+from lms_terrain import Terrain  # noqa: E402
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+DEFAULT_OUTPUT = REPO / "docs/data/minimap.png"
+
+# Dense in the shallows where players are, coarse in the deep.
+DEPTHS = [-10, -25, -45, -70, -100, -140, -190, -250, -330, -450, -650, -900, -1300, -1750]
+
+# Map colours, RGB.
+LAND = (108, 96, 78)
+SHALLOW = (86, 176, 190)
+DEEP = (10, 24, 54)
+
+
+def ramp(fraction: float):
+    """Shallow-to-deep colour, linear in the depth index so the shallows get most of the range."""
+    return tuple(round(a + (b - a) * fraction) for a, b in zip(SHALLOW, DEEP))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--install", type=pathlib.Path,
+                        default=pathlib.Path.home() / ".local/share/Steam/steamapps/common/Subnautica")
+    parser.add_argument("--size", type=int, default=256, help="pixels per side")
+    parser.add_argument("--output", type=pathlib.Path, default=DEFAULT_OUTPUT)
+    args = parser.parse_args()
+
+    from PIL import Image
+
+    try:
+        terrain = Terrain(args.install, cache_size=48)
+    except lms_terrain.MissingTerrain as missing:
+        print(f"{missing}\nThis needs a Subnautica install.", file=sys.stderr)
+        return 2
+
+    span = lms_terrain.WORLD_METRES[0]
+    metres = span / args.size
+    image = Image.new("RGB", (args.size, args.size))
+    pixels = image.load()
+
+    started = time.time()
+    # Column-major in batch order: one file read per batch instead of one per pixel.
+    order = sorted(((i, j) for i in range(args.size) for j in range(args.size)),
+                   key=lambda ij: (int(ij[0] * metres) // lms_terrain.BATCH_METRES,
+                                   int(ij[1] * metres) // lms_terrain.BATCH_METRES))
+    for i, j in order:
+        x = i * metres - span / 2
+        z = j * metres - span / 2
+        if terrain.is_solid(x, 2, z):
+            pixels[i, j] = LAND
+            continue
+        for index, depth in enumerate(DEPTHS):
+            if terrain.is_solid(x, depth, z):
+                pixels[i, j] = ramp(index / (len(DEPTHS) - 1))
+                break
+        else:
+            pixels[i, j] = DEEP
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    image.save(args.output)
+    print(f"{args.output}  {args.size}x{args.size}, {metres:.0f} m per pixel, "
+          f"{args.output.stat().st_size / 1024:.0f} KiB, {time.time() - started:.0f}s")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Lets node read static/*.js as ES modules, as a browser does. There are no dependencies and no build step."
+}

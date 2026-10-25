@@ -1,0 +1,35 @@
+# Every per-batch biome override string in the installed world data, extracted by
+# scripts/extract-biome-data. See docs/data/README.md.
+#
+# tournamentBiome is AUTHORED, not generated -- it is the mapping the resolver applies.
+# surfaceBiome is what biomes.csv says above these batches, and is mostly a reminder that
+# the biome map is 2D: the Lava Zone's surface biome is the Safe Shallows.
+#
+# overrideString	tournamentBiome	batches	surfaceBiome
+ALZChamber	activeLavaZone	19	crashZone
+ALZFalls	activeLavaZone	1	grassyPlateaus
+BloodKelp	bloodKelp	5	seaTreaderPath
+BloodKelp_Trench	bloodKelpTrench	13	bloodKelp
+DeepGrandReef	deepGrandReef	8	grandReef
+EmperorFacility	primaryContainmentFacility	12	crashZone
+ILZChamber	inactiveLavaZone	87	kelpForest
+ILZCorridor	inactiveLavaZone	76	dunes
+JellyshroomCaves	jellyshroomCaves	21	grassyPlateaus
+KelpForest	kelpForest	1	kelpForest
+LavaFalls	activeLavaZone	3	kelpForest
+LavaLakes	activeLavaZone	29	safeShallows
+LavaPit	activeLavaZone	3	kelpForest
+LostRiver_BonesField	lostRiver	28	grassyPlateaus
+LostRiver_BonesField_Corridor	lostRiver	12	dunes
+LostRiver_Canyon	lostRiver	15	sparseReef
+LostRiver_Corridor	lostRiver	11	mountains
+LostRiver_GhostTree	lostRiver	8	mushroomForest
+LostRiver_GhostTree_Lower	lostRiver	5	mushroomForest
+LostRiver_GhostTree_Skeleton	lostRiver	1	bloodKelpTwo
+LostRiver_Junction	lostRiver	56	kelpForest
+LostRiver_TreeCove	lostRiver	21	mushroomForest
+Prison_UpperRoom	primaryContainmentFacility	5	crashZone
+SafeShallows	safeShallows	2	safeShallows
+SparseReef	sparseReef	10	sparseReef
+UnderwaterIslands	underwaterIslands	5	underwaterIslands
+deepGrandReef	deepGrandReef	10	grandReef

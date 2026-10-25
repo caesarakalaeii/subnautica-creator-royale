@@ -1,0 +1,187 @@
+# Playtest config: a full-length round with damage and PvP switched on.
+#
+# The three configs in this directory:
+#   tournament.example.yaml    reference for authoring a tournament; damage off.
+#   tournament.playtest.yaml   this file: 10-minute opening, a phase every 6:40, damage on.
+#   tournament.test.yaml       test fixture with hand-placed phase centres; the C# tests assert
+#                              its values, so do not retune it.
+#
+# Install it with ./scripts/install-mod --config playtest, or copy it to lms-tournament.yaml beside
+# the server and beside the client mod. Unknown fields are errors.
+
+match:
+  # A phase every 6:40 after a 10-minute opening: phases at 10:00, 16:40 and 23:20, the final
+  # collapse at 30:00, shut at 35:00. warningLead, each phase's shrinkFor and disconnect.grace are
+  # tuned to this cadence; change them together.
+  cycleLength: 00:06:40
+
+  # One minute of warning, so every rung of the countdown (60 s down to 1 s) is heard.
+  warningLead: 1m
+
+  # The wall stays stopped this long after a win before MatchEnded is recorded.
+  victoryWindow: 10s
+
+  # The first window, long enough to craft a Seaglide before the wall moves.
+  openingLength: 10m
+
+zone:
+  # How often a player outside the wall takes damage.
+  damageInterval: 2s
+
+  # Metres outside the wall at which the screen effect is at full strength. Visual only.
+  fullExposureAt: 150
+
+  # Nearly transparent: the wall is found by its damage and the minimap rings rather than by eye.
+  colours:
+    now: "#FF00000A"
+    next: "#7CFF5C01"
+
+  # Wide enough that the opening covers the whole crater (about 39% water, effective radius
+  # 2200 m per ./scripts/check-zone).
+  opening:
+    centre: [100, -20, -350]
+    radius: 3000
+    damagePerTick: 1
+
+  # Where a match may finish, drawn with the seed below; no repeats until all six have been used.
+  # Listed shallow to deep, with each place's depth. Each must lie within opening.radius minus the
+  # last phase's radius (2880 m) of the opening centre.
+  destinations:
+    - name: Crash Zone                          # 91 m
+      centre: [1092, -91, 296]
+    - name: Inside the big mushroom tree        # 156 m
+      centre: [-864, -156, 597]
+    - name: Jellyshroom Cave                    # 262 m
+      centre: [-632, -262, -93]
+    - name: Lost River, near the skull          # 761 m
+      centre: [-731, -761, -272]
+    - name: The Ghost Tree                      # 908 m; the furthest, so the fastest wall
+      centre: [-944, -908, 448]
+    - name: Lava Zone, outside the containment  # 1450 m
+      centre: [208, -1450, -240]
+
+  # Fixes the shuffle so a disputed game can be replayed. Change it per event.
+  destinationSeed: 2410
+
+  # Centres are derived from the drawn destination. The radii are scaled to the r3000 opening so
+  # phase 1 keeps the sea surface inside it. Five-minute shrinks keep the worst draw at about 4.7,
+  # 5.7 and 4.6 m/s (a Seaglide does about 11) and leave 1:40 of still water per cycle.
+  phases:
+    - radius: 2100
+      shrinkFor: 5m
+      damagePerTick: 3
+
+    - radius: 1000
+      shrinkFor: 5m
+      damagePerTick: 8
+
+    # The final arena lands on the drawn place. Deep draws are often unreachable with the starting
+    # kit, so the wall decides those rounds.
+    - radius: 120
+      shrinkFor: 5m
+      damagePerTick: 20
+
+# The game's own stasis rifle values, written out.
+ring:
+  minRadius: 1
+  maxRadius: 10
+  minLifetime: 4s
+  maxLifetime: 20s
+  placementMargin: 1
+  energyCost: 5
+
+# Prawn arms hurt players.
+prawn:
+  hurtsPlayers: true
+  clawDamage: 20
+
+  # Not yet measured against the drill's real tick rate; watch it.
+  drillDamage: 5
+
+  reach: 9
+  minInterval: 800ms
+
+# Knife and heat blade hurt players. The kit below includes a knife.
+blade:
+  hurtsPlayers: true
+  knifeDamage: 12
+  heatBladeDamage: 20
+  reach: 6
+  minInterval: 250ms
+
+  # The default, written out.
+  resistances:
+    ReinforcedDiveSuit: 0.5
+
+spawn:
+  # A pod each. Applies to players new to this world; lms podspawn re-seats everybody.
+  ownPod: true
+
+  # Only used when falling back to the game's start points; the circle below is wider anyway.
+  minSeparation: 100
+
+  # Pods planned per group, and the head count lms round expects (lms round force overrides).
+  groupSize: 4
+
+  # Pods on a circle of 300 m around the origin: four pods at bearings 000, 090, 180 and 270,
+  # 424 m apart. Re-run ./scripts/check-zone after changing it.
+  circleRadius: 300
+
+# The defaults, written out.
+spectator:
+  deathCam: 5s
+  spectate: true
+  flySpeed: 8
+
+# Pushes the match to a casting booth. The token comes from LMS_INGEST_TOKEN on the server.
+# The server log says at startup whether it is pushing, missing the token, or has no URL.
+# Only one game server may push to a booth at a time.
+telemetry:
+  url: https://sn.caes.ar/ingest
+  interval: 1s
+  timeout: 3s
+  acceptsCommands: true
+
+audit:
+  positionInterval: 5s
+
+disconnect:
+  # The default; well under a phase at this cadence, and long enough for a Nitrox reconnect.
+  grace: 90s
+
+flags:
+  enforceDamage: true
+  showDestination: false
+  enforceContainment: true
+  hideBeacons: true
+
+# First aid kits: one per 30 s of match time. A refused kit is not consumed.
+medkit:
+  cooldown: 30s
+
+# Present but not in the match.
+ghosts:
+  - CasterOne
+  - CasterTwo
+
+start:
+  # The match starts this long after lms round.
+  hold: 30s
+
+  # The game's own lifepod supplies, given straight to the inventory, plus a knife for the blade
+  # rules above. Names are TechType names; FilteredWater is the small bottle.
+  kit:
+    - FilteredWater
+    - FilteredWater
+    - NutrientBlock
+    - NutrientBlock
+    - Flare
+    - Flare
+    - Knife
+
+  # Nothing withheld: all vehicles can be built.
+  lockedRecipes: []
+
+  # Every blueprint is granted. [] would make every contestant scan for their own.
+  recipes:
+    - all

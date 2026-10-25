@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Builds the Nitrox fork and both halves of the mod, and installs them with a config.
+
+The launcher must be built first: it writes NitroxPatcher into its own lib/net472, and Lms.Server
+resolves its Nitrox references from the server's build output. Run inside `nix develop` (net9.0).
+
+usage: ./scripts/install-mod [--config {example,playtest,test}] [--refresh-config]
+"""
+from __future__ import annotations
+
+import argparse
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+LAUNCHER = ROOT / "nitrox/Nitrox.Launcher/bin/Release/net9.0"
+SERVER_BUILD = ROOT / "nitrox/Nitrox.Server.Subnautica/bin/Release/net9.0"
+CONFIG_NAME = "lms-tournament.yaml"
+
+# The fork's cell-timing instrument (nitrox/NitroxClient/GameLogic/CellTiming) stays silent unless
+# a marker file of this name sits beside NitroxClient.
+MARKER_NAME = "lms-cell-timing"
+
+# `example` is a five-minute demo with damage off; `test` (the default) has a one-minute cycle with
+# damage on, suited to a local two-client session. See docs/config/README.md.
+CONFIGS = {
+    "test": ROOT / "docs/config/tournament.test.yaml",
+    "example": ROOT / "docs/config/tournament.example.yaml",
+    "playtest": ROOT / "docs/config/tournament.playtest.yaml",
+}
+
+# Every place a config is read from. The server's copy decides the zone; the client's sets bite
+# damage and how the wall and ring are drawn. A server started from the standalone build reads the
+# copy beside its lib.
+CONFIG_DIRECTORIES = [
+    (LAUNCHER, "the server"),
+    (LAUNCHER / "lib/net472", "the client"),
+    (SERVER_BUILD / "lib", "the standalone server build"),
+]
+
+# Everything that has to be in place afterwards, or the game loads without the tournament.
+REQUIRED = [
+    (LAUNCHER / "lib/net472", ["Lms.Game.dll", "Lms.Core.dll", "NitroxPatcher.dll", "lms-minimap.png"]),
+    (LAUNCHER / "lib", ["Lms.Server.dll", "Lms.Core.dll", "YamlDotNet.dll"]),
+]
+
+
+def die(message: str) -> None:
+    print(message, file=sys.stderr)
+    raise SystemExit(1)
+
+
+def run(*command: str) -> None:
+    if subprocess.run(command, cwd=ROOT).returncode != 0:
+        die(f"failed: {' '.join(command)}")
+
+
+def install_config(directory: Path, whose: str, source: Path, refresh: bool) -> None:
+    """Installs the config without overwriting an existing one unless `refresh` is set.
+
+    An installed config older than the source is only warned about: it may be stale or out of sync
+    with the other side's copy, and a config the loader rejects runs no tournament.
+    """
+    if not directory.exists():
+        # Not built yet; not a failure.
+        print(f"==> skipped the config for {whose}: {directory.relative_to(ROOT)} is not built")
+        return
+
+    installed = directory / CONFIG_NAME
+
+    if not installed.exists():
+        shutil.copy2(source, installed)
+        print(f"==> installed {source.name} for {whose}")
+        return
+
+    if refresh:
+        shutil.copy2(source, installed)
+        print(f"==> replaced the config for {whose} with {source.name}")
+        return
+
+    if source.stat().st_mtime > installed.stat().st_mtime:
+        print(f"==> WARNING: {installed} is older than {source.relative_to(ROOT)}.", file=sys.stderr)
+        print("    The schema may have moved under it, and the two halves may not even be the same",
+              file=sys.stderr)
+        print("    file. Run with --refresh-config to replace both, or compare them by hand; a config",
+              file=sys.stderr)
+        print("    the loader rejects runs no tournament at all.", file=sys.stderr)
+
+
+def drop_marker(directory: Path) -> None:
+    """Switches the cell-timing instrument on by touching its marker in `directory`.
+
+    The instrument times the entity round trip per cell, to tell an empty cell from a slow one. It
+    probes the launcher's lib/net472, then the game root; never Subnautica_Data/Managed. Not in
+    REQUIRED: the mod runs without it. Costs tens of MB of log per client per match; delete the file
+    to switch it off.
+    """
+    marker = directory / MARKER_NAME
+    marker.touch()
+    shown = marker.relative_to(ROOT) if marker.is_relative_to(ROOT) else marker
+    print(f"==> cell timing ON for this launcher: {shown} (delete it to switch off)")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", choices=sorted(CONFIGS), default="test",
+                        help="which config to install (default: test, the one built to feel the thing)")
+    parser.add_argument("--refresh-config", action="store_true",
+                        help="replace the installed configs rather than leaving them alone")
+    arguments = parser.parse_args()
+
+    source = CONFIGS[arguments.config]
+
+    run("./scripts/nitrox-fork")
+
+    print("==> building the launcher (this is what assembles lib/net472 and lib)")
+    run("dotnet", "build", "nitrox/Nitrox.Launcher/Nitrox.Launcher.csproj", "-c", "Release", "-v", "q", "--nologo")
+
+    print("==> building and installing the mod, both halves")
+    run("dotnet", "build", "src/Lms.Game/Lms.Game.csproj", "-c", "Release", "-v", "q", "--nologo")
+    run("dotnet", "build", "src/Lms.Server/Lms.Server.csproj", "-c", "Release", "-v", "q", "--nologo")
+
+    for directory, whose in CONFIG_DIRECTORIES:
+        install_config(directory, whose, source, arguments.refresh_config)
+
+    for directory, files in REQUIRED:
+        for name in files:
+            if not (directory / name).is_file():
+                die(f"{name} is missing from {directory} -- the game would load without the mod")
+
+    drop_marker(LAUNCHER / "lib/net472")
+
+    print()
+    print("installed. start it with:")
+    print("  ./nitrox/Nitrox.Launcher/bin/Release/net9.0/Nitrox.Launcher")
+    print()
+    print("`lms` is a server command now: /login <adminpassword> in the Nitrox chat, then /lms round.")
+
+
+if __name__ == "__main__":
+    main()

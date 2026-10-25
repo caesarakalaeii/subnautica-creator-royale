@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Subnautica Creator Royale · tournament</title>
+    <!-- Link preview card (Discord, X, Slack). URLs are absolute because crawlers do not resolve
+         relative ones; theme-color sets Discord's side stripe. -->
+    <meta name="description" content="16 creators, four groups, one last player standing. Saturday 24 and Sunday 25 October: the schedule in your own time zone, the bracket as the event decides it, and the cast on Twitch and YouTube." />
+    <meta name="theme-color" content="#f08a00" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Subnautica Creator Royale" />
+    <meta property="og:title" content="Subnautica Creator Royale" />
+    <meta property="og:description" content="16 creators, four groups, one last player standing. Saturday 24 and Sunday 25 October: the schedule in your own time zone, the bracket as the event decides it, and the cast on Twitch and YouTube." />
+    <meta property="og:url" content="https://sn.caes.ar/tournament.html" />
+    <meta property="og:image" content="https://sn.caes.ar/royale-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Subnautica Creator Royale" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/bracket.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="bracket royale">
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__mark" aria-hidden="true"></span>
+        <span class="bar__title"><span class="royale__gold">Sub</span><span class="royale__blue">nautica</span> <span class="royale__gold">Creator</span> <span class="royale__blue">Royale</span></span>
+        <span class="bar__sub" data-field="zone">last man standing</span>
+      </div>
+
+      <div class="link" data-field="link" role="status" aria-live="polite">
+        <span class="link__dot" aria-hidden="true"></span>
+        <span class="link__text">loading</span>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html">home</a>
+      <a class="tabs__tab" href="tournament.html" aria-current="page">tournament</a>
+      <a class="tabs__tab" href="index.html">view</a>
+      <a class="tabs__tab" href="bracket.html">bracket</a>
+      <a class="tabs__tab" href="console.html">operator</a>
+      <a class="tabs__tab" href="events.html">events</a>
+    </nav>
+
+    <!-- The public overview: the schedule in the viewer's time zone and the bracket so far. Reads
+         the published bracket without a token and writes nothing. -->
+    <main class="sheet sheet--wide">
+      <h1 class="royale__hero">
+        <img class="royale__logo" src="royale-logo.png" alt="Subnautica Creator Royale" width="900" height="541" />
+      </h1>
+
+      <!-- Stream links open in a new tab, so the schedule stays open. -->
+      <nav class="watch" aria-label="watch the cast">
+        <a class="watch__link watch__link--twitch" href="https://www.twitch.tv/goldstuffonyt" target="_blank" rel="noopener">watch on Twitch</a>
+        <a class="watch__link watch__link--youtube" href="https://www.youtube.com/@Goldstuffnotonyt" target="_blank" rel="noopener">watch on YouTube</a>
+      </nav>
+
+      <section class="now" aria-label="what is on">
+        <div class="now__cell now__cell--live">
+          <span class="now__label">on now</span>
+          <span class="now__title" data-field="live">&nbsp;</span>
+          <span class="now__when" data-field="liveWhen"></span>
+        </div>
+        <div class="now__cell">
+          <span class="now__label">next</span>
+          <span class="now__title" data-field="next">&nbsp;</span>
+          <span class="now__when" data-field="nextWhen"></span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="flow-heading">
+        <h2 class="panel__head" id="flow-heading">the bracket</h2>
+        <div class="flow" data-field="flow"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="days-heading">
+        <h2 class="panel__head" id="days-heading">schedule <span data-field="zoneName"></span></h2>
+        <div class="days" data-field="days"></div>
+      </section>
+
+      <p class="hint">Points, kills and the full table are on the <a href="bracket.html">bracket</a> page.</p>
+    </main>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <script type="module" src="/tournament-page.js"></script>
+  </body>
+</html>

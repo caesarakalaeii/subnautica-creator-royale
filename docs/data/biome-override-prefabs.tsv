@@ -1,0 +1,46 @@
+# Atmosphere prefabs that batch roots pull their settings from, extracted by
+# scripts/extract-biome-data. LargeWorldBatchRoot.PullSettingsFromPrefab assigns
+# overrideBiome = AtmosphereVolume.overrideBiome, replacing whatever the batch file said.
+#
+# overrideBiome cannot be read here -- the value is inside an addressable bundle -- so it
+# is filled in from what the game itself reported: the `lmsbiomes` console command,
+# whose full output is atmosphere-biomes.tsv. Preserved on rewrite. A dash means the prefab
+# carries no biome of its own, which wipes whatever string the batch file carried.
+# replacesLiteral counts the batches where this prefab overwrites a string that IS in
+# biome-overrides.tsv -- for every one of them, both sources name the same tournament biome.
+#
+# atmospherePrefab	overrideBiome	batches	replacesLiteral
+WorldEntities/Atmosphere/ActiveLavazone/LavaFalls.prefab	LavaFalls	4	4
+WorldEntities/Atmosphere/ActiveLavazone/LavaLakes.prefab	LavaLakes	33	33
+WorldEntities/Atmosphere/ActiveLavazone/LavaPit.prefab	LavaPit	3	3
+WorldEntities/Atmosphere/ActiveLavazone/Normal.prefab	ALZChamber	15	15
+WorldEntities/Atmosphere/BloodKelp/Normal.prefab	BloodKelp	3	3
+WorldEntities/Atmosphere/BloodKelp/Trench.prefab	BloodKelp_Trench	15	15
+WorldEntities/Atmosphere/DeepGrandReef/Normal_named.prefab	deepGrandReef	18	18
+WorldEntities/Atmosphere/Dunes/Sparse Zone Dunes.prefab	-	11	0
+WorldEntities/Atmosphere/FloatingIslands/Islands.prefab	FloatingIsland	3	0
+WorldEntities/Atmosphere/GrandReef/Normal.prefab	-	20	0
+WorldEntities/Atmosphere/GrassyPlateaus/Caves.prefab	grassyPlateaus_Cave	11	0
+WorldEntities/Atmosphere/GrassyPlateaus/Normal.prefab	GrassyPlateaus	19	0
+WorldEntities/Atmosphere/Inactive Lavazone/Large Chamber.prefab	ILZChamber	67	67
+WorldEntities/Atmosphere/Inactive Lavazone/Normal.prefab	ILZCorridor	73	72
+WorldEntities/Atmosphere/JellyshroomCaves/Caves (Sphere).prefab	JellyshroomCaves	21	21
+WorldEntities/Atmosphere/JellyshroomCaves/Caves.prefab	JellyshroomCaves	1	0
+WorldEntities/Atmosphere/KelpForest/Dense.prefab	KelpForest_Dense	1	1
+WorldEntities/Atmosphere/KelpForest/Normal.prefab	-	2	0
+WorldEntities/Atmosphere/KooshZone/Koosh_Defaultlight_Box.prefab	-	50	0
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField.prefab	LostRiver_BonesField	28	28
+WorldEntities/Atmosphere/LostRiver/BonesField/LostRiver_BonesField_Corridor.prefab	LostRiver_BonesField_Corridor	12	12
+WorldEntities/Atmosphere/LostRiver/Canyon/LostRiver_Canyon.prefab	LostRiver_Canyon	15	15
+WorldEntities/Atmosphere/LostRiver/Corridor/LostRiver_Corridor.prefab	LostRiver_Corridor	11	11
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree.prefab	LostRiver_GhostTree	8	8
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Lower.prefab	LostRiver_GhostTree_Lower	5	5
+WorldEntities/Atmosphere/LostRiver/GhostTree/LostRiver_GhostTree_Skeleton.prefab	LostRiver_GhostTree_Skeleton	1	1
+WorldEntities/Atmosphere/LostRiver/Junction/LostRiver_Junction.prefab	LostRiver_Junction	60	60
+WorldEntities/Atmosphere/LostRiver/TreeCove/LostRiver_Tree_Cove.prefab	LostRiver_TreeCove	17	17
+WorldEntities/Atmosphere/Mountains/MountainsBaseBox.prefab	-	135	0
+WorldEntities/Atmosphere/Precursor/EmperorFacility/Precursor_Prison_UpperRoom_Atmosphere.prefab	Prison_UpperRoom	17	17
+WorldEntities/Atmosphere/SafeShallows/Normal.prefab	-	10	2
+WorldEntities/Atmosphere/SparseReef/Normal.prefab	SparseReef	10	10
+WorldEntities/Atmosphere/TreaderPath/Treader Path Base.prefab	-	27	0
+WorldEntities/Atmosphere/UnderwaterIslands/Normal.prefab	UnderwaterIslands	5	5

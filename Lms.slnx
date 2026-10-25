@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Lms.Core.Tests/Lms.Core.Tests.csproj" />
+    <Project Path="src/Lms.Core/Lms.Core.csproj" />
+  </Folder>
+</Solution>

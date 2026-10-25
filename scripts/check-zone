@@ -1,0 +1,1035 @@
+#!/usr/bin/env python3
+"""Checks offline that a config's squeeze and spawn circle are playable.
+
+`ZoneScheduleValidator` checks the squeeze's geometry; this checks what it cannot:
+
+    IS THERE WATER IN IT      read from the game's terrain octrees (see scripts/lms_terrain.py)
+    CAN A PLAYER OUTSWIM IT   the wall speed a player feels: shrink rate plus the centre's walk
+    CAN A PLAYER REACH IT     how deep the wall leaves the map, read beside start.kit
+
+One table row per sphere the match passes through, in order. A `spawn.circleRadius` circle is also
+checked pod by pod, since a circle ignores terrain and can put a pod in rock or the dead zone.
+
+usage:
+    ./scripts/check-zone                       # the example config
+    ./scripts/check-zone path/to/lms-tournament.yaml
+    ./scripts/check-zone --self-test           # the arithmetic, then the octree reader
+
+Exits non-zero if any sphere or pod fails.
+"""
+import argparse
+import math
+import os
+import pathlib
+import random
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import lms_terrain  # noqa: E402
+from lms_terrain import Terrain  # noqa: E402
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+DEFAULT_CONFIG = REPO / "docs/config/tournament.example.yaml"
+
+# Thresholds (m) on the effective radius: radius times the cube root of the water fraction, i.e.
+# the radius of a ball holding the same water. A fraction alone does not compare across sizes.
+FAIL_EFFECTIVE_RADIUS = 25
+WARN_EFFECTIVE_RADIUS = 60
+
+# Player swim speeds in m/s, matching MembraneCrossing.cs.
+FIN_SPEED = 4.0
+SEAGLIDE_SPEED = 11.0
+
+# Wall speed limits in m/s. Faster than fins warns; twice fins fails, since only a Seaglide could
+# escape it. A tournament-design choice.
+WARN_WALL_SPEED = FIN_SPEED
+FAIL_WALL_SPEED = 8.0
+
+# Depth (m) past which an empty `start.kit` has nothing in reach, as DEEP_SEABED below. Advisory
+# only: `judge` warns, never fails, on it.
+KIT_DEPTH = 200
+
+
+def default_install() -> pathlib.Path:
+    from_env = os.environ.get("SUBNAUTICA_INSTALLATION_PATH")
+    if from_env:
+        return pathlib.Path(from_env)
+    return pathlib.Path.home() / ".local/share/Steam/steamapps/common/Subnautica"
+
+
+def sphere_points(centre, radius, count, seed=20261024):
+    """Deterministic uniform points in the ball, sorted for batch locality."""
+    rng = random.Random(seed)
+    cx, cy, cz = centre
+    points = []
+    while len(points) < count:
+        x, y, z = rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1)
+        if x * x + y * y + z * z <= 1:
+            points.append((cx + x * radius, cy + y * radius, cz + z * radius))
+
+    # One file read per batch instead of one per sample.
+    def batch(p):
+        return tuple(int((v + o) // lms_terrain.BATCH_METRES) for v, o in zip(p, lms_terrain.ORIGIN))
+
+    points.sort(key=batch)
+    return points
+
+
+def survey(terrain, centre, radius, samples):
+    """Water, air and rock as fractions of the sphere's volume."""
+    water = air = rock = 0
+    for x, y, z in sphere_points(centre, radius, samples):
+        if terrain.is_solid(x, y, z):
+            rock += 1
+        elif y >= 0:
+            # Sea level is world y = 0; sky is not playable.
+            air += 1
+        else:
+            water += 1
+
+    total = water + air + rock
+    return water / total, air / total, rock / total
+
+
+def nearest_clear(terrain, centre, radius, reach=120, step=40, samples=1500):
+    """The nearest centre within reach with enough water, else the wettest; a coarse suggestion."""
+    found = []
+    offsets = range(-reach, reach + 1, step)
+    for dx in offsets:
+        for dy in offsets:
+            for dz in offsets:
+                distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                if distance > reach:
+                    continue
+                candidate = (centre[0] + dx, centre[1] + dy, centre[2] + dz)
+                if terrain.is_solid(*candidate):
+                    continue
+                water, _air, _rock = survey(terrain, candidate, radius, samples)
+                found.append((candidate, water, distance))
+
+    if not found:
+        return None
+
+    good = [c for c in found if c[1] ** (1 / 3) * radius >= WARN_EFFECTIVE_RADIUS]
+    if good:
+        return min(good, key=lambda c: c[2])
+    return max(found, key=lambda c: c[1])
+
+
+# Minimum relative water gain before a different opening is suggested; below it is sampling noise.
+OPENING_GAIN = 0.10
+
+
+def better_opening(terrain, centre, radius, places, last_radius, samples, reach, step, here):
+    """A wetter opening centre of the same radius that still reaches every destination, or None.
+
+    The radius is fixed because every phase's wall speed depends on it. Returns None when the
+    authored centre is within `OPENING_GAIN` of the best found.
+    """
+    if not places:
+        # Without destinations any centre is legal, so there is nothing to constrain a suggestion.
+        return None
+
+    def reaches(candidate):
+        return all(math.dist(candidate, place) + last_radius <= radius for _name, place in places)
+
+    def water_in(candidate):
+        water, _air, _rock = survey(terrain, candidate, radius, samples)
+        return water
+
+    best = None
+
+    offsets = range(-reach, reach + 1, step)
+    for dx in offsets:
+        for dy in offsets:
+            for dz in offsets:
+                candidate = (centre[0] + dx, centre[1] + dy, centre[2] + dz)
+
+                # Skip centres the table would itself fail.
+                if candidate[1] >= 0 or terrain.is_solid(*candidate):
+                    continue
+                if not reaches(candidate):
+                    continue
+
+                water = water_in(candidate)
+                if best is None or water > best[1]:
+                    best = (candidate, water)
+
+    if best is None or best[1] <= here * (1 + OPENING_GAIN):
+        return None
+
+    return best[0], best[1]
+
+
+def survey_row(terrain, centre, radius, samples):
+    """The water half of one sphere: the columns the table prints, a verdict, and its notes."""
+    water, air, rock = survey(terrain, centre, radius, samples)
+    effective = radius * water ** (1 / 3)
+    seabed = terrain.surface_height(centre[0], centre[2])
+
+    verdict = "OK"
+    notes = []
+
+    if terrain.is_solid(*centre):
+        verdict = "FAIL"
+        notes.append("the centre is inside rock")
+    if centre[1] >= 0:
+        verdict = "FAIL"
+        notes.append("the centre is above sea level")
+    if effective < FAIL_EFFECTIVE_RADIUS:
+        verdict = "FAIL"
+        notes.append(f"only {water:.0%} water, an arena the size of a {effective:.0f} m ball")
+    elif effective < WARN_EFFECTIVE_RADIUS and verdict == "OK":
+        verdict = "WARN"
+        notes.append(f"an arena the size of a {effective:.0f} m ball is tight for five players")
+    if air > 0.25:
+        # A note, not a fault: large spheres are unavoidably part sky.
+        notes.append(f"{air:.0%} is above sea level, so the arena is smaller than r{radius:.0f} reads")
+
+    if seabed is None:
+        clearance = "open water below"
+    elif seabed > centre[1]:
+        clearance = f"buried {seabed - centre[1]:.0f} m under the seabed"
+    else:
+        clearance = f"{centre[1] - seabed:.0f} m above the seabed"
+
+    columns = (f"water {water:>4.0%}  rock {rock:>4.0%}  sky {air:>4.0%}  "
+               f"effective r{effective:<5.0f} {clearance}")
+    return columns, verdict, notes, water
+
+
+# Preview slice colours, RGB. Flat, because the question is only "rock or not".
+ROCK = (96, 84, 74)
+WATER = (28, 78, 112)
+SKY = (176, 196, 210)
+WALL = (255, 214, 92)
+SEA_LINE = (120, 200, 230)
+
+
+def preview(terrain, label, centre, radius, directory: pathlib.Path, size=320):
+    """Writes a PNG of two slices through the sphere: a plan at the centre's depth and a
+    vertical section. One solidity query per pixel."""
+    from PIL import Image, ImageDraw
+
+    span = radius * 2.4
+    metres_per_pixel = span / size
+    cx, cy, cz = centre
+
+    plan = Image.new("RGB", (size, size))
+    section = Image.new("RGB", (size, size))
+    plan_px, section_px = plan.load(), section.load()
+
+    for i in range(size):
+        a = (i - size / 2) * metres_per_pixel
+        for j in range(size):
+            b = (j - size / 2) * metres_per_pixel
+            # Plan: looking down, +x right, +z down the image.
+            plan_px[i, j] = ROCK if terrain.is_solid(cx + a, cy, cz + b) else WATER
+            # Section: looking north, +x right, height up the image.
+            y = cy - b
+            if terrain.is_solid(cx + a, y, cz):
+                section_px[i, j] = ROCK
+            else:
+                section_px[i, j] = SKY if y >= 0 else WATER
+
+    radius_px = radius / metres_per_pixel
+    for image in (plan, section):
+        draw = ImageDraw.Draw(image)
+        draw.ellipse([size / 2 - radius_px, size / 2 - radius_px,
+                      size / 2 + radius_px, size / 2 + radius_px], outline=WALL, width=2)
+        draw.line([size / 2 - 4, size / 2, size / 2 + 4, size / 2], fill=WALL)
+        draw.line([size / 2, size / 2 - 4, size / 2, size / 2 + 4], fill=WALL)
+
+    sea_level_px = size / 2 + cy / metres_per_pixel
+    if 0 <= sea_level_px < size:
+        ImageDraw.Draw(section).line([0, sea_level_px, size, sea_level_px], fill=SEA_LINE)
+
+    sheet = Image.new("RGB", (size * 2 + 12, size), (18, 18, 20))
+    sheet.paste(plan, (0, 0))
+    sheet.paste(section, (size + 12, 0))
+
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"zone-{label.replace(' ', '-')}.png"
+    sheet.save(path)
+    return path
+
+
+# Depth (m) a pod spot is sampled at: pods float on the surface, and the octree resolution is
+# metres, so y=0 exactly is too close to call.
+POD_DEPTH = -5
+
+# Seabed depth (m) below which early-game resources are out of reach. A warning, not a fault.
+DEEP_SEABED = -200
+
+
+def pod_circle(radius, count):
+    """Yields (bearing, position) per pod; must match SpawnCircle.Circumference exactly.
+
+    Due north first, then clockwise: sine on x, cosine on z.
+    """
+    for index in range(count):
+        bearing = 2 * math.pi * index / count
+        yield bearing, (radius * math.sin(bearing), 0.0, radius * math.cos(bearing))
+
+
+def load_spawn(config):
+    """The config's spawn circle (radius, group size, opening sphere), or None."""
+    spawn = config.get("spawn") or {}
+    radius = float(spawn.get("circleRadius") or 0)
+
+    if radius <= 0:
+        return None
+
+    opening = (config.get("zone") or {}).get("opening")
+    centre = opening["centre"] if opening else [0, 0, 0]
+
+    return {
+        "radius": radius,
+        "count": int(spawn.get("groupSize") or 5),
+        "separation": float(spawn.get("minSeparation") or 0),
+        "opening": ((float(centre[0]), float(centre[1]), float(centre[2])),
+                    float(opening["radius"]) if opening else 0.0),
+    }
+
+
+def report_pods(terrain, spawn):
+    """Prints one line per pod on the spawn circle and returns their verdicts."""
+    radius, count = spawn["radius"], spawn["count"]
+    (ox, oy, oz), opening_radius = spawn["opening"]
+    chord = 2 * radius * math.sin(math.pi / count) if count > 1 else 0.0
+
+    print(f"  spawn     a circle r{radius:.0f} round the origin, {count} pods, "
+          f"neighbours {chord:.0f} m apart against a target of {spawn['separation']:.0f} m")
+
+    verdicts = []
+    for bearing, (x, y, z) in pod_circle(radius, count):
+        seabed = terrain.surface_height(x, z)
+        outside = math.dist((x, y, z), (ox, oy, oz)) - opening_radius
+
+        verdict, notes = "OK", []
+        if terrain.is_solid(x, POD_DEPTH, z):
+            verdict = "FAIL"
+            notes.append(f"solid at {POD_DEPTH} m -- this is inside land, a wreck, or the Aurora")
+        elif seabed is None:
+            verdict = "FAIL"
+            notes.append("no seabed in the whole column -- this is the dead zone, off the map")
+        elif seabed >= 0:
+            verdict = "FAIL"
+            notes.append(f"the ground here is {seabed:.0f} m above sea level -- this is an island")
+        elif seabed < DEEP_SEABED:
+            verdict = "WARN"
+            notes.append(f"{-seabed:.0f} m of water below and nothing in reach of a new pod")
+
+        if outside > 0:
+            verdict = "FAIL"
+            notes.append(f"{outside:.0f} m outside zone.opening -- outside the wall before moving")
+
+        floor = "no seabed" if seabed is None else f"seabed {seabed:>5.0f} m"
+        print(f"  pod {len(verdicts) + 1:<5} ({x:>6.0f},{y:>4.0f},{z:>6.0f})  "
+              f"bearing {math.degrees(bearing):>3.0f}   {floor:<16} {verdict}")
+        for note in notes:
+            print(f"    ^ {note}")
+        verdicts.append(verdict)
+
+    if chord < spawn["separation"]:
+        print(f"    ^ the circle is too tight for spawn.minSeparation: r{radius:.0f} with "
+              f"{count} pods gives {chord:.0f} m, not {spawn['separation']:.0f} m")
+
+    return verdicts
+
+
+def read_config(path: pathlib.Path):
+    """Parses the config once.
+
+    yaml is imported here so --self-test's arithmetic half runs without pyyaml.
+    """
+    import yaml
+    return yaml.safe_load(path.read_text())
+
+
+def parse_duration(written, field) -> float:
+    """Seconds, parsed the way `TournamentConfigLoader.ParseDuration` parses them.
+
+    `ms` is tested before the single-letter units, or `800ms` would read as minutes. A bare number
+    is refused: the loader's `TimeSpan.TryParse` reads `5` as five days. `00:05:00` arrives as a
+    string because YAML's sexagesimal rule needs a leading 1-9.
+    """
+    if not isinstance(written, str):
+        raise SystemExit(f"{field}: write the length of time with a unit -- 800ms, 90s, 5m, 1h or "
+                         f"00:05:00. A bare {written!r} is five DAYS to the loader's own parser, "
+                         f"and check-zone will not guess which you meant.")
+
+    text = written.strip()
+
+    def number(digits):
+        try:
+            value = float(digits)
+        except ValueError:
+            return None
+        return value if math.isfinite(value) else None
+
+    if len(text) > 2 and text.endswith("ms"):
+        milliseconds = number(text[:-2])
+        if milliseconds is not None:
+            return milliseconds / 1000
+
+    if len(text) > 1 and text[-1] in "smh":
+        value = number(text[:-1])
+        if value is not None:
+            return value * {"s": 1, "m": 60, "h": 3600}[text[-1]]
+
+    parts = text.split(":")
+    if len(parts) in (2, 3) and all(number(part) is not None for part in parts):
+        # Two fields are hours and minutes, as in `TimeSpan.Parse("05:00")` (five hours), to match
+        # what the server does.
+        seconds = number(parts[2]) if len(parts) == 3 else 0.0
+        return number(parts[0]) * 3600 + number(parts[1]) * 60 + seconds
+
+    raise SystemExit(f"{field}: '{written}' is not a length of time. Write it as 800ms, 90s, 5m, "
+                     f"1h or 00:05:00.")
+
+
+def load_squeeze(config, path: pathlib.Path):
+    """The config's squeeze: opening, phases, cycle, destinations and start kit."""
+    zone = config.get("zone")
+    if not zone:
+        raise SystemExit(f"{path} has no `zone:` section -- is it an old config?")
+
+    def named(node, key, where):
+        if not isinstance(node, dict) or node.get(key) is None:
+            raise SystemExit(f"{where}.{key} is missing -- check-zone reads the same fields the "
+                             f"server does, and cannot pace a squeeze without it.")
+        return node[key]
+
+    def point(node, where):
+        try:
+            return (float(node[0]), float(node[1]), float(node[2]))
+        except (TypeError, ValueError, IndexError, KeyError):
+            raise SystemExit(f"{where}: a centre is three numbers, [x, y, z].")
+
+    opening = named(zone, "opening", "zone")
+    phases = zone.get("phases") or []
+    if not phases:
+        raise SystemExit(f"{path} has no `zone.phases` -- a zone that never shrinks is not a "
+                         f"squeeze, and the match would never end.")
+
+    match = config.get("match") or {}
+    start = config.get("start") or {}
+    cycle = match.get("cycleLength")
+    opening_length = match.get("openingLength")
+
+    return {
+        "opening": (point(named(opening, "centre", "zone.opening"), "zone.opening.centre"),
+                    float(named(opening, "radius", "zone.opening"))),
+        "cycle": parse_duration(cycle, "match.cycleLength") if cycle is not None else None,
+        # Absent means the same as the cycle, as in the loader. Only used for the header.
+        "opening_length": (parse_duration(opening_length, "match.openingLength")
+                           if opening_length is not None else None),
+        "phases": [{"radius": float(named(phase, "radius", f"zone.phases[{index}]")),
+                    "shrink": parse_duration(named(phase, "shrinkFor", f"zone.phases[{index}]"),
+                                             f"zone.phases[{index}].shrinkFor"),
+                    "centre": point(phase["centre"], f"zone.phases[{index}].centre")
+                    if phase.get("centre") else None}
+                   for index, phase in enumerate(phases)],
+        "destinations": [(str(place.get("name", "unnamed")),
+                          point(named(place, "centre", "zone.destinations[]"), "zone.destinations[].centre"))
+                         for place in (zone.get("destinations") or [])],
+        # An absent `lockedRecipes` (None) locks the three vehicles; an empty one locks nothing,
+        # as in the loader's `locked ?? StartPolicy.Default`.
+        "kit": [str(item) for item in (start.get("kit") or [])],
+        "locked": (None if start.get("lockedRecipes") is None
+                   else [str(item) for item in start["lockedRecipes"]]),
+    }
+
+
+def walk_squeeze(squeeze, destination=None):
+    """Every sphere the match passes through, in order, with its walk and wall speed.
+
+    A line-by-line port of `ZoneSqueeze.Toward` (src/Lms.Core/Zones/ZoneSqueeze.cs) so it can be
+    diffed against the C#. Row 0 is the opening (no window, no speed). The last row is the collapse
+    `ZoneSchedule` appends: radius 0 on the last centre, with the last window.
+    """
+    opening_centre, opening_radius = squeeze["opening"]
+    shapes = squeeze["phases"]
+    reach = opening_radius - shapes[-1]["radius"]
+
+    def sphere(number, radius, shrink, centre, previous_radius, previous_centre, collapse=False):
+        walk = math.dist(previous_centre, centre)
+        # Felt wall speed is the shrink rate plus the centre's walk. `ZoneShrink` lerps both
+        # linearly across the window, so the speed is constant through the phase.
+        speed = math.inf if shrink is None or shrink <= 0 else (previous_radius - radius + walk) / shrink
+        return {"number": number, "collapse": collapse, "radius": radius, "shrink": shrink,
+                "centre": centre, "walk": walk, "speed": speed,
+                "shallowest": centre[1] + radius, "deepest": centre[1] - radius}
+
+    rows = [{"number": 0, "collapse": False, "radius": opening_radius, "shrink": None,
+             "centre": opening_centre, "walk": None, "speed": None,
+             "shallowest": opening_centre[1] + opening_radius,
+             "deepest": opening_centre[1] - opening_radius}]
+
+    spent = 0.0
+    previous_radius = opening_radius
+    previous_centre = opening_centre
+    for index, shape in enumerate(shapes):
+        spent += previous_radius - shape["radius"]
+        if destination is None:
+            if shape["centre"] is None:
+                raise SystemExit(f"zone.phases[{index}] has no centre and there are no "
+                                 f"destinations to derive one from.")
+            centre = shape["centre"]
+        elif index == len(shapes) - 1:
+            # The last phase lands exactly on the place, as `Toward` pins it.
+            centre = destination
+        else:
+            fraction = spent / reach if reach > 0 else 1.0
+            centre = tuple(here + (there - here) * fraction
+                           for here, there in zip(opening_centre, destination))
+        rows.append(sphere(index + 1, shape["radius"], shape["shrink"], centre,
+                           previous_radius, previous_centre))
+        previous_radius, previous_centre = shape["radius"], centre
+
+    rows.append(sphere(len(shapes) + 1, 0.0, shapes[-1]["shrink"], previous_centre,
+                       previous_radius, previous_centre, collapse=True))
+    return rows
+
+
+SEVERITY = ("OK", "WARN", "FAIL")
+
+
+def worse(verdict, other):
+    return other if SEVERITY.index(other) > SEVERITY.index(verdict) else verdict
+
+
+def judge(row, squeeze, surface_already_lost=False):
+    """Verdict and notes for a sphere's wall speed, sea-surface ceiling and depth.
+
+    Wall speed: over FAIL_WALL_SPEED fails, over fins warns. Losing the sea surface fails only for
+    the opening and phase 1, since pods spawn on the surface; later it warns, as deep endgames are
+    intended. Depth beyond KIT_DEPTH only warns, printed beside the start kit for the operator.
+    """
+    verdict, notes = "OK", []
+    toward = f" toward {row['toward']}" if row.get("toward") else ""
+
+    if row["speed"] is not None:
+        if row["shrink"] is not None and row["shrink"] <= 0:
+            verdict = worse(verdict, "FAIL")
+            notes.append("the wall teleports: shrinkFor is 0s, so the sphere arrives rather than "
+                         "closes and there is nothing to swim away from")
+        elif row["speed"] > FAIL_WALL_SPEED:
+            verdict = worse(verdict, "FAIL")
+            notes.append(f"closes at {row['speed']:.2f} m/s{toward}: fins are ~{FIN_SPEED:.0f} m/s "
+                         f"and a Seaglide ~{SEAGLIDE_SPEED:.0f}, so this is a cutscene rather than "
+                         f"a squeeze")
+        elif row["speed"] > WARN_WALL_SPEED:
+            verdict = worse(verdict, "WARN")
+            notes.append(f"{row['speed']:.2f} m/s{toward} is faster than fins, so only a player who "
+                         f"already has a Seaglide can hold the wall")
+
+    if not row["collapse"] and row["shallowest"] < 0 and not surface_already_lost:
+        if row["number"] == 0:
+            verdict = worse(verdict, "FAIL")
+            notes.append(f"the sea surface is {-row['shallowest']:.0f} m outside the opening wall, "
+                         f"and the pods spawn on the surface")
+        elif row["number"] == 1:
+            verdict = worse(verdict, "FAIL")
+            notes.append(f"the sea surface is outside the wall by the end of phase 1, and the round "
+                         f"starts on it: everybody is {-row['shallowest']:.0f} m short of the zone "
+                         f"with the kit they were given")
+        else:
+            verdict = worse(verdict, "WARN")
+            notes.append(f"the surface is outside the wall from phase {row['number']}; everything "
+                         f"after it needs {-row['shallowest']:.0f} m of depth")
+
+    if not row["collapse"] and row["number"] > 0 and -row["shallowest"] > KIT_DEPTH:
+        kit = ", ".join(squeeze["kit"]) if squeeze["kit"] else None
+        if squeeze["locked"] is None:
+            locked = "start.lockedRecipes is absent, which locks the Seamoth, the Prawn and the Cyclops"
+        elif squeeze["locked"]:
+            locked = "start.lockedRecipes locks " + ", ".join(squeeze["locked"])
+        else:
+            locked = "start.lockedRecipes locks nothing"
+        verdict = worse(verdict, "WARN")
+        notes.append(f"phase {row['number']} bottoms out at {row['shallowest']:.0f} m and "
+                     f"{('start.kit is ' + kit) if kit else 'start.kit is empty'}; {locked}")
+
+    return verdict, notes
+
+
+def report_zone(terrain, squeeze, samples, search, preview_dir=None, opening_search=0):
+    """Prints one table row per sphere the match passes through and returns their verdicts.
+
+    Wall speed and depth are checked for every phase. Water is surveyed only for the opening and
+    the final sphere at each destination: with a destination pool the intermediate centres depend
+    on the draw, and those spheres are large enough to always hold water.
+    """
+    walks = [(name, walk_squeeze(squeeze, centre)) for name, centre in squeeze["destinations"]]
+    if not walks:
+        walks = [(None, walk_squeeze(squeeze))]
+
+    # A destination must sit inside the final sphere; `better_opening` checks against this.
+    last_radius = squeeze["phases"][-1]["radius"] if squeeze["phases"] else 0
+
+    authored = len(squeeze["phases"])
+    draws = len(squeeze["destinations"])
+    reach = squeeze["opening"][1] - squeeze["phases"][-1]["radius"]
+
+    def unluckiest(index):
+        """The worst draw for one phase: the fastest wall and the lowest ceiling, which usually
+        come from different destinations."""
+        fastest = max(walks, key=lambda walk: walk[1][index]["speed"])
+        deepest = min(walks, key=lambda walk: walk[1][index]["shallowest"])
+        row = dict(fastest[1][index], toward=fastest[0], under=deepest[0])
+        row["shallowest"] = deepest[1][index]["shallowest"]
+        row["deepest"] = deepest[1][index]["deepest"]
+        return row
+
+    plan = [{"phase": "opening", "where": "", "row": dict(walks[0][1][0]), "survey": True,
+             "fixed": True, "worst": False}]
+    for index in range(1, authored):
+        plan.append({"phase": f"phase {index}", "where": f"worst of {draws} draws" if draws else "",
+                     "row": unluckiest(index), "survey": not draws, "fixed": not draws,
+                     "worst": bool(draws)})
+    if draws:
+        plan += [{"phase": f"phase {authored}", "where": name,
+                  "row": dict(walk[authored], toward=name), "survey": True, "fixed": True,
+                  "worst": False}
+                 for name, walk in walks]
+    else:
+        plan.append({"phase": f"phase {authored}", "where": "", "row": dict(walks[0][1][authored]),
+                     "survey": True, "fixed": True, "worst": False})
+    plan.append({"phase": "collapse", "where": "on the drawn place" if draws else "",
+                 "row": unluckiest(authored + 1), "survey": False, "fixed": not draws,
+                 "worst": bool(draws)})
+
+    if squeeze["cycle"] is None:
+        cycle = "no match.cycleLength"
+    elif squeeze.get("opening_length") in (None, squeeze["cycle"]):
+        cycle = f"{squeeze['cycle']:.0f}s cycle"
+    else:
+        cycle = (f"{squeeze['opening_length']:.0f}s opening then a {squeeze['cycle']:.0f}s cycle")
+    places = f"{draws} places it can finish" if draws else "centres authored in the file"
+    print(f"  {authored} phases and the collapse, one to a {cycle}, {places}, "
+          f"{reach:.0f} m of walk to spend\n")
+
+    table = []
+    surface_lost = False
+    for entry in plan:
+        row = entry["row"]
+        centre = row["centre"]
+        verdict, notes = judge(row, squeeze, surface_lost)
+        surface_lost = surface_lost or row["shallowest"] < 0
+
+        water, wet, measured = "", "OK", None
+        if entry["survey"]:
+            water, wet, wet_notes, measured = survey_row(terrain, centre, row["radius"], samples)
+            verdict = worse(verdict, wet)
+            notes += wet_notes
+
+        if entry["worst"]:
+            notes.insert(0, f"of the {draws} draws the lowest ceiling is toward {row['under']}"
+                            + (f", and the fastest wall toward {row['toward']}"
+                               if not row["collapse"] else ""))
+
+        table.append({
+            "wet": wet,
+            # Reused by the opening suggestion so it quotes the printed number.
+            "water": measured,
+            "cells": [entry["phase"], entry["where"],
+                      f"({centre[0]:.0f},{centre[1]:.0f},{centre[2]:.0f}) r{row['radius']:.0f}"
+                      if entry["fixed"] else f"r{row['radius']:.0f}",
+                      "-" if row["shrink"] is None else f"{row['shrink']:.0f}s",
+                      "-" if row["speed"] is None else
+                      ("instant" if math.isinf(row["speed"]) else f"{row['speed']:.2f} m/s"),
+                      f"{row['shallowest']:+.0f}", water],
+            "verdict": verdict, "notes": notes, "entry": entry,
+        })
+
+    header = ["phase", "where", "sphere", "window", "wall speed", "ceiling", "the water in it"]
+    widths = [max(len(header[column]), max(len(line["cells"][column]) for line in table))
+              for column in range(len(header))]
+    # Numeric columns are right-aligned.
+    align = [str.ljust, str.ljust, str.ljust, str.rjust, str.rjust, str.rjust, str.ljust]
+
+    def lay_out(cells):
+        return "  " + "  ".join(pad(cell, width) for cell, pad, width in zip(cells, align, widths))
+
+    print(lay_out(header) + "  verdict")
+    verdicts = []
+    for line in table:
+        entry = line["entry"]
+        row = entry["row"]
+        print(f"{lay_out(line['cells'])}  {line['verdict']}")
+        for note in line["notes"]:
+            print(f"    ^ {note}")
+
+        if entry["survey"] and preview_dir is not None:
+            drawn = preview(terrain, entry["where"] or entry["phase"], row["centre"],
+                            row["radius"], preview_dir)
+            print(f"    preview: {drawn}")
+
+        # The opening is the one centre an author picks freely, so suggest a wetter one. A nearby
+        # centre is suggested below only for a water failure; moving cannot fix a speed failure.
+        if entry["phase"] == "opening" and opening_search > 0:
+            found = better_opening(terrain, row["centre"], row["radius"],
+                                   squeeze["destinations"], last_radius, samples // 4,
+                                   opening_search, opening_search // 3,
+                                   here=line["water"])
+            if found is not None:
+                (bx, by, bz), water_there = found
+                water_here = line["water"]
+                print(f"    ^ a wetter opening of the same size exists and still reaches all "
+                      f"{len(squeeze['destinations'])}: [{bx:.0f}, {by:.0f}, {bz:.0f}] is "
+                      f"{water_there:.0%} water against {water_here:.0%}, an effective "
+                      f"r{row['radius'] * water_there ** (1 / 3):.0f} against "
+                      f"r{row['radius'] * water_here ** (1 / 3):.0f}")
+                print(f"    ^ moving it re-derives every phase centre, so re-run this after: the "
+                      f"walk each phase spends is measured from the opening")
+
+        if line["wet"] == "FAIL" and search > 0:
+            best = nearest_clear(terrain, row["centre"], row["radius"], reach=search)
+            if best is None:
+                print(f"    no clear centre within {search} m -- pick somewhere else entirely")
+            else:
+                (bx, by, bz), water_fraction, distance = best
+                print(f"    nearest clear centre within {search} m: "
+                      f"[{bx:.0f}, {by:.0f}, {bz:.0f}] ({water_fraction:.0%} water, {distance:.0f} m away)")
+
+        verdicts.append(line["verdict"])
+
+    return verdicts
+
+
+def check(failures, name, ok, detail=""):
+    """Prints one self-test line and records a failure."""
+    print(f"  {'ok  ' if ok else 'FAIL'}  {name}{(' -- ' + detail) if detail else ''}")
+    if not ok:
+        failures.append(name)
+
+
+def self_test_arithmetic():
+    """Tests the squeeze arithmetic against literal fixtures; needs no install or config file.
+
+    Fixtures are literals, not reads of the shipped configs, so the port of `ZoneSqueeze.Toward`
+    is what is under test.
+    """
+    failures = []
+
+    ghost_tree = (-944.0, -908.0, 448.0)
+
+    # The deepest place a match can finish.
+    deepest_place = (208.0, -1450.0, -240.0)
+
+    def playtest():
+        """The squeeze in docs/config/tournament.playtest.yaml, as literals."""
+        return {
+            "opening": ((100.0, -20.0, -350.0), 3000.0),
+            "cycle": 360.0,
+            "phases": [{"radius": 2100.0, "shrink": 300.0, "centre": None},
+                       {"radius": 1000.0, "shrink": 360.0, "centre": None},
+                       {"radius": 120.0, "shrink": 300.0, "centre": None}],
+            "destinations": [("Crash Zone", (1092.0, -91.0, 296.0)),
+                             ("Inside the big mushroom tree", (-864.0, -156.0, 597.0)),
+                             ("Jellyshroom Cave", (-632.0, -262.0, -93.0)),
+                             ("Lost River, near the skull", (-731.0, -761.0, -272.0)),
+                             ("The Ghost Tree", ghost_tree),
+                             ("Lava Zone, outside the containment", deepest_place)],
+            "kit": [],
+            "locked": ["Seamoth", "Exosuit", "Cyclops"],
+        }
+
+    def case(name, body):
+        """Runs one case; an exception counts as a failure."""
+        try:
+            ok, detail = body()
+        except Exception as broken:  # noqa: BLE001 -- the harness reports it rather than dying on it
+            ok, detail = False, f"{type(broken).__name__}: {broken}"
+        check(failures, name, ok, detail)
+
+    def the_wall_is_the_shrink_plus_the_walk():
+        rows = walk_squeeze(playtest(), ghost_tree)
+        speeds = [row["speed"] for row in rows[1:]]
+        return (all(abs(a - b) <= 0.01 for a, b in zip(speeds, [4.65, 4.74, 4.55, 0.40])),
+                ", ".join(f"{speed:.2f}" for speed in speeds) + " m/s")
+
+    def a_squeeze_that_outruns_a_seaglide_fails():
+        wide = dict(playtest(), opening=((100.0, -20.0, -350.0), 1800.0),
+                     phases=[{"radius": 900.0, "shrink": 180.0, "centre": None},
+                             {"radius": 400.0, "shrink": 180.0, "centre": None},
+                             {"radius": 120.0, "shrink": 120.0, "centre": None}])
+        row = walk_squeeze(wide, ghost_tree)[1]
+        verdict, _notes = judge(row, wide)
+        return abs(row["speed"] - 9.72) <= 0.01 and verdict == "FAIL", f"{row['speed']:.2f} m/s, {verdict}"
+
+    def a_phase_with_no_window_is_a_wall_that_teleports():
+        instant = dict(playtest(), phases=[{"radius": 2100.0, "shrink": 0.0, "centre": None},
+                                           {"radius": 120.0, "shrink": 300.0, "centre": None}])
+        row = walk_squeeze(instant, ghost_tree)[1]
+        verdict, notes = judge(row, instant)
+        return (row["speed"] == math.inf and verdict == "FAIL" and any("teleport" in n for n in notes),
+                f"{row['speed']}, {verdict}")
+
+    def the_walk_spends_exactly_the_reach():
+        squeeze = playtest()
+        opening_centre, _radius = squeeze["opening"]
+        worst = 0.0
+        landed = True
+        for _name, destination in squeeze["destinations"]:
+            rows = walk_squeeze(squeeze, destination)
+            spent = sum(row["walk"] for row in rows[1:])
+            worst = max(worst, abs(spent - math.dist(opening_centre, destination)))
+            landed = landed and rows[-2]["centre"] == destination
+        return worst < 1e-9 and landed, f"worst drift {worst:.2e} m, last phase lands on the place"
+
+    def a_hand_authored_squeeze_walks_its_own_centres():
+        authored = {"opening": ((0.0, -20.0, 0.0), 1000.0), "cycle": 300.0,
+                    "phases": [{"radius": 600.0, "shrink": 120.0, "centre": (100.0, -50.0, 0.0)},
+                               {"radius": 200.0, "shrink": 120.0, "centre": (150.0, -80.0, 0.0)}],
+                    "destinations": [], "kit": [], "locked": []}
+        rows = walk_squeeze(authored, None)
+        return (rows[1]["centre"] == (100.0, -50.0, 0.0)
+                and abs(rows[1]["walk"] - math.dist((0.0, -20.0, 0.0), (100.0, -50.0, 0.0))) < 1e-9
+                and abs(rows[2]["walk"] - math.dist((100.0, -50.0, 0.0), (150.0, -80.0, 0.0))) < 1e-9,
+                f"{rows[1]['walk']:.1f} m then {rows[2]['walk']:.1f} m")
+
+    def the_sea_surface_has_to_be_inside_the_opening():
+        sunk = {"opening": ((0.0, -2000.0, 0.0), 1000.0), "cycle": 300.0,
+                "phases": [{"radius": 600.0, "shrink": 300.0, "centre": None},
+                           {"radius": 120.0, "shrink": 300.0, "centre": None}],
+                "destinations": [("a hole", (0.0, -2400.0, 0.0))], "kit": [], "locked": []}
+        drowned, notes = judge(walk_squeeze(sunk, (0.0, -2400.0, 0.0))[0], sunk)
+        # Checks notes, not the verdict: the shipped phase 1 still warns on speed.
+        shipped = walk_squeeze(playtest(), deepest_place)
+        opening, opening_notes = judge(shipped[0], playtest())
+        _first, first_notes = judge(shipped[1], playtest())
+        quiet = [note for note in opening_notes + first_notes if "surface" in note]
+        return (drowned == "FAIL" and any("pod" in note for note in notes)
+                and opening == "OK" and not quiet,
+                f"a sunk opening is {drowned}; the shipped opening is {opening} and neither it nor "
+                f"phase 1 mentions the surface")
+
+    def a_phase_deeper_than_an_empty_kit_can_reach_is_a_warning():
+        squeeze = playtest()
+        row = walk_squeeze(squeeze, deepest_place)[3]
+        verdict, notes = judge(row, squeeze)
+        said = [note for note in notes if "-1330" in note and "start.kit is empty" in note]
+        return verdict == "WARN" and bool(said), said[0] if said else f"{verdict}, {notes}"
+
+    def a_duration_is_read_the_way_the_loader_reads_it():
+        written = {"800ms": 0.8, "90s": 90.0, "5m": 300.0, "1h": 3600.0, "00:05:00": 300.0}
+        read = {text: parse_duration(text, "zone.phases[0].shrinkFor") for text in written}
+        try:
+            parse_duration("5x", "zone.phases[0].shrinkFor")
+            refused = False
+        except SystemExit:
+            refused = True
+        return read == written and refused, f"{read}, and 5x is {'refused' if refused else 'accepted'}"
+
+    case("the wall a player feels is the shrink plus the centre's walk", the_wall_is_the_shrink_plus_the_walk)
+    case("a squeeze that outruns a Seaglide fails", a_squeeze_that_outruns_a_seaglide_fails)
+    case("a phase with no window at all is a wall that teleports", a_phase_with_no_window_is_a_wall_that_teleports)
+    case("the walk spends exactly the reach", the_walk_spends_exactly_the_reach)
+    case("a hand-authored squeeze walks its own centres", a_hand_authored_squeeze_walks_its_own_centres)
+    case("the sea surface has to be inside the opening", the_sea_surface_has_to_be_inside_the_opening)
+    case("a phase deeper than an empty kit can reach is a warning, not a failure",
+         a_phase_deeper_than_an_empty_kit_can_reach_is_a_warning)
+    case("a duration is read the way the loader reads it", a_duration_is_read_the_way_the_loader_reads_it)
+
+    # The opening search against a stub world with no rock, so a deeper centre is always wetter.
+    class OpenWater:
+        """A world with no rock."""
+
+        @staticmethod
+        def is_solid(_x, _y, _z):
+            return False
+
+    def a_wetter_opening_has_to_reach_every_place():
+        # "east" sits at the edge: any centre west of the authored one stops reaching it.
+        places = [("east", (1600.0, -100.0, 0.0)), ("west", (-400.0, -100.0, 0.0))]
+        found = better_opening(OpenWater, (0.0, -100.0, 0.0), 1800.0, places, 120.0,
+                               samples=4000, reach=600, step=300, here=0.05)
+        if found is None:
+            return False, "nothing suggested at all, and a deeper centre is always wetter here"
+
+        centre, _water = found
+        reaches = all(math.dist(centre, place) + 120.0 <= 1800.0 for _name, place in places)
+        return reaches, f"suggested {tuple(round(c) for c in centre)}"
+
+    def a_pool_with_no_room_gets_no_suggestion():
+        # Only the authored centre reaches both.
+        places = [("east", (1680.0, 0.0, 0.0)), ("west", (-1680.0, 0.0, 0.0))]
+        found = better_opening(OpenWater, (0.0, -100.0, 0.0), 1800.0, places, 120.0,
+                               samples=4000, reach=600, step=300, here=0.05)
+        return found is None, "suggested something" if found else "nothing to suggest"
+
+    def an_opening_already_good_enough_is_left_alone():
+        # `here` is set above anything the stub can beat.
+        places = [("near", (100.0, -100.0, 0.0))]
+        found = better_opening(OpenWater, (0.0, -100.0, 0.0), 1800.0, places, 120.0,
+                               samples=4000, reach=600, step=300, here=1.0)
+        return found is None, "suggested something better than all the water there is"
+
+    def a_squeeze_with_no_pool_is_not_second_guessed():
+        found = better_opening(OpenWater, (0.0, -100.0, 0.0), 1800.0, [], 120.0,
+                               samples=4000, reach=600, step=300, here=0.01)
+        return found is None, "suggested a centre with no pool to keep it honest"
+
+    case("a wetter opening has to reach every place a match can finish",
+         a_wetter_opening_has_to_reach_every_place)
+    case("a pool with no room to move gets no suggestion", a_pool_with_no_room_gets_no_suggestion)
+    case("an opening already good enough is left alone", an_opening_already_good_enough_is_left_alone)
+    case("a squeeze with no destination pool is not second-guessed",
+         a_squeeze_with_no_pool_is_not_second_guessed)
+
+    return failures
+
+def self_test_octrees(terrain) -> list:
+    """Re-runs the checks that establish the octree layout, against this install."""
+    import statistics
+
+    failures = []
+
+    files = sorted(terrain.root.glob("*.optoctrees"))
+    check(failures, "the cache is present", len(files) > 5000, f"{len(files)} batch files")
+
+    # Every sampled file must parse to the exact byte through the real loader; that validates the
+    # layout, including the 5x5x3 batches at the world edge.
+    bad = []
+    partial = 0
+    for path in files[::37]:
+        bx, by, bz = (int(v) for v in path.stem.split("-")[2:5])
+        try:
+            _trees, shape = terrain._load(bx, by, bz)
+        except ValueError as mismatch:
+            bad.append(str(mismatch))
+            continue
+        if shape != (5, 5, 5):
+            partial += 1
+    check(failures, "every sampled file parses to the exact byte", not bad,
+          f"{len(files[::37])} files, {partial} partial at the world edge, {len(bad)} bad")
+    for mismatch in bad[:3]:
+        print(f"        {mismatch}")
+
+    # World anchors: the origin is the Safe Shallows; 1500 m down is the lava zone.
+    surface = terrain.surface_height(0, 0)
+    check(failures, "the seabed at the world origin is shallow", surface is not None and -60 < surface < 0,
+          f"{surface} m")
+    check(failures, "the world origin at -5 m is water", not terrain.is_solid(0, -5, 0))
+    check(failures, "the lava zone at -1500 m is rock", terrain.is_solid(0, -1500, 0))
+
+    # The x/z assignment: transposing the tree index tears the surface at every batch seam.
+    heights = {}
+    for bx in range(11, 14):
+        for bz in range(11, 14):
+            for lx in range(0, 160, 8):
+                for lz in range(0, 160, 8):
+                    wx, wz = bx * 160 + lx - lms_terrain.ORIGIN[0], bz * 160 + lz - lms_terrain.ORIGIN[2]
+                    heights[(wx, wz)] = terrain.surface_height(wx, wz, step=8) or -1920
+
+    def mean_step(seam):
+        deltas = [abs(heights[(x, z)] - heights[(x + 8, z)])
+                  for (x, z) in heights if (x + 8, z) in heights
+                  and (((x + 8 + lms_terrain.ORIGIN[0]) % 160 == 0) == seam)]
+        return statistics.mean(deltas)
+
+    across, inside = mean_step(True), mean_step(False)
+    check(failures, "the surface is continuous across batch seams", across < inside * 2,
+          f"{across:.1f} m across seams against {inside:.1f} m inside batches")
+
+    return failures
+
+
+def self_test(install) -> int:
+    """Runs the squeeze arithmetic, then the octree reader if an install is present."""
+    print("==> the squeeze arithmetic")
+    failures = self_test_arithmetic()
+
+    print("\n==> the octree reader")
+    skipped = False
+    try:
+        terrain = Terrain(install)
+    except lms_terrain.MissingTerrain as missing:
+        skipped = True
+        print(f"  skipped: {missing}")
+        print("  (this half needs a Subnautica install; the arithmetic above does not.)")
+    else:
+        failures += self_test_octrees(terrain)
+
+    print()
+    if failures:
+        print(f"{len(failures)} check(s) failed.")
+        return 1
+    # Say whether the octree half actually ran.
+    print("the arithmetic agrees with itself; the octree half was skipped for want of an install."
+          if skipped else "the tool agrees with itself and with the installed world.")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("config", nargs="?", type=pathlib.Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--install", type=pathlib.Path, default=default_install())
+    parser.add_argument("--samples", type=int, default=20000,
+                        help="points per sphere; 20000 puts the water fraction inside half a point")
+    parser.add_argument("--opening-search", type=int, default=600,
+                        help="how far to look for a wetter opening of the same size; 0 to skip")
+    parser.add_argument("--search", type=int, default=120,
+                        help="how far to look for a better centre when the water fails; 0 to skip")
+    parser.add_argument("--preview", type=pathlib.Path, default=None, metavar="DIR",
+                        help="write a plan view and a vertical section per phase, as PNGs")
+    parser.add_argument("--self-test", action="store_true",
+                        help="check the arithmetic against fixtures and the reader against the "
+                             "install, then exit")
+    args = parser.parse_args()
+
+    if args.self_test:
+        return self_test(args.install)
+
+    try:
+        terrain = Terrain(args.install)
+    except lms_terrain.MissingTerrain as missing:
+        print(f"{missing}\nThis needs a Subnautica install. Set SUBNAUTICA_INSTALLATION_PATH "
+              f"or pass --install.", file=sys.stderr)
+        return 2
+
+    config = read_config(args.config)
+    print(f"{args.config}\n")
+    verdicts = report_zone(terrain, load_squeeze(config, args.config),
+                           args.samples, args.search, args.preview, args.opening_search)
+    print()
+
+    failed = verdicts.count("FAIL")
+    warned = verdicts.count("WARN")
+    if failed:
+        print(f"{failed} sphere(s) unplayable, {warned} worth a look. Fix the centres, the radii "
+              f"or the windows -- and re-run this, because all three move together.")
+        return 1
+    if warned:
+        print(f"{warned} sphere(s) worth a look, none unplayable.")
+    else:
+        print("every sphere has water in it, and nothing closes faster than a player can swim.")
+
+    spawn = load_spawn(config)
+    if spawn is None:
+        print("\nno spawn.circleRadius, so the pods are the game's own start points and are in "
+              "water by construction.")
+        return 0
+
+    print()
+    pods = report_pods(terrain, spawn)
+    print()
+
+    drowned = pods.count("FAIL")
+    if drowned:
+        print(f"{drowned} of {len(pods)} pods would spawn somewhere unplayable. Change "
+              f"spawn.circleRadius -- a circle consults no map, so this is the only check there is.")
+        return 1
+    if "WARN" in pods:
+        print(f"{pods.count('WARN')} pod(s) worth a look, none unplayable.")
+        return 0
+    print("every pod on the circle is in water, inside the wall.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

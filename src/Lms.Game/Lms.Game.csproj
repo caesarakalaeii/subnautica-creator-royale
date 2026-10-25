@@ -1,0 +1,137 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Per-developer paths: SubnauticaDir and NitroxDir. Gitignored; see local.props.example. -->
+  <Import Project="$(MSBuildThisFileDirectory)../../local.props" Condition="Exists('$(MSBuildThisFileDirectory)../../local.props')" />
+
+  <PropertyGroup>
+    <!-- The game runs Mono against .NET Framework 4.7.2 assemblies. Not in Lms.slnx: it needs a
+         game install to build. -->
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <!-- annotations, not enable: the game and Unity are not annotated. Matches Nitrox. -->
+    <Nullable>annotations</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Lms.Game</AssemblyName>
+    <RootNamespace>Lms.Game</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Game install: local.props, then SUBNAUTICA_INSTALLATION_PATH, then the default Steam path. -->
+  <PropertyGroup>
+    <SubnauticaDir Condition="'$(SubnauticaDir)' == '' and '$(SUBNAUTICA_INSTALLATION_PATH)' != ''">$(SUBNAUTICA_INSTALLATION_PATH)</SubnauticaDir>
+    <SubnauticaDir Condition="'$(SubnauticaDir)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">$(HOME)/.local/share/Steam/steamapps/common/Subnautica</SubnauticaDir>
+    <SubnauticaDir Condition="'$(SubnauticaDir)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">C:\Program Files (x86)\Steam\steamapps\common\Subnautica</SubnauticaDir>
+    <GameManagedDir>$(SubnauticaDir)/Subnautica_Data/Managed/</GameManagedDir>
+
+    <NitroxDir Condition="'$(NitroxDir)' == ''">$(MSBuildThisFileDirectory)../../nitrox/</NitroxDir>
+    <!-- The patcher's output holds every Nitrox assembly, so references resolve from here. -->
+    <NitroxManagedDir>$(NitroxDir)NitroxPatcher/bin/$(Configuration)/net472/</NitroxManagedDir>
+    <!-- The game loads from the launcher's lib/net472, not the patcher's bin: a command-line
+         launcher build writes the patcher there directly, so the mod is copied here too. -->
+    <NitroxLauncherLibDir Condition="'$(NitroxLauncherLibDir)' == ''">$(NitroxDir)Nitrox.Launcher/bin/$(Configuration)/net9.0/lib/net472/</NitroxLauncherLibDir>
+  </PropertyGroup>
+
+  <Target Name="CheckGameAndForkArePresent" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameManagedDir)Assembly-CSharp.dll')"
+           Text="No Subnautica install at '$(SubnauticaDir)'. Set SubnauticaDir in local.props (see local.props.example) or the SUBNAUTICA_INSTALLATION_PATH environment variable. This project cannot be built without the game." />
+    <Error Condition="!Exists('$(NitroxManagedDir)NitroxClient.dll')"
+           Text="No Nitrox fork build at '$(NitroxManagedDir)'. Run ./scripts/nitrox-fork first, or set NitroxDir in local.props." />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="../Lms.Core/Lms.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The game's own assemblies. Private=false: they are already loaded in the process. -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Int3 lives here; GetBiome's overload set needs it even when passing a Vector3. -->
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(GameManagedDir)Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManagedDir)UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(GameManagedDir)UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Texture2D.LoadImage, for the minimap PNG the mod ships beside its config. -->
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(GameManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Collider, MeshCollider and Physics, for the ring's shell. -->
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(GameManagedDir)UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- TextAnchor, for the readout's GUIStyle. -->
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- HarmonyX, already loaded by the fork: the boarding gate must refuse OnHandClick rather
+       than undo it, and only a patch can. -->
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(NitroxManagedDir)0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Nitrox's logger and the assembly holding the tournament packet and its relay. Not
+       NitroxClient: a smaller Nitrox surface keeps rebases onto new releases cheap. -->
+  <ItemGroup>
+    <Reference Include="Nitrox.Model">
+      <HintPath>$(NitroxManagedDir)Nitrox.Model.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Nitrox.Model.Subnautica">
+      <HintPath>$(NitroxManagedDir)Nitrox.Model.Subnautica.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Serilog">
+      <HintPath>$(NitroxManagedDir)Serilog.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Deploy beside the patcher's bin and the launcher's lib/net472; the latter is where
+       NitroxPatcher.dll loads from at runtime and where LmsHook probes. -->
+  <Target Name="DeployNextToNitrox" AfterTargets="Build">
+    <ItemGroup>
+      <!-- YamlDotNet ships too: the client never parses YAML, but touching a config type without
+           it throws FileNotFoundException. -->
+      <_LmsDeployFiles Include="$(TargetPath);$(TargetDir)Lms.Core.dll;$(TargetDir)YamlDotNet.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_LmsDeployFiles)" DestinationFolder="$(NitroxManagedDir)"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxManagedDir)')" />
+    <Copy SourceFiles="@(_LmsDeployFiles)" DestinationFolder="$(NitroxLauncherLibDir)"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxLauncherLibDir)')" />
+    <!-- The minimap, renamed to the lms- prefix the mod looks for. Generated offline by
+         ./scripts/make-minimap because the in-game map API is dead code (see ZoneHud). -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../../docs/data/minimap.png"
+          DestinationFiles="$(NitroxManagedDir)lms-minimap.png"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxManagedDir)')" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../../docs/data/minimap.png"
+          DestinationFiles="$(NitroxLauncherLibDir)lms-minimap.png"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxLauncherLibDir)')" />
+    <Message Importance="high" Condition="Exists('$(NitroxLauncherLibDir)')"
+             Text="Installed Lms.Game.dll and Lms.Core.dll into $(NitroxLauncherLibDir)" />
+    <Warning Condition="!Exists('$(NitroxLauncherLibDir)')"
+             Text="The launcher has not been built, so the mod is not installed where the game loads it. Run ./scripts/install-mod." />
+  </Target>
+
+</Project>

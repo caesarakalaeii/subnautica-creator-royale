@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Starts the patched Nitrox launcher. Set LMS_INGEST_TOKEN to push the match to a caster booth;
+# the token is never stored in the tournament config.
+#
+#     LMS_INGEST_TOKEN=... ./scripts/run-launcher
+#
+# Run outside `nix develop`: nix's dotnet cannot load Avalonia's Skia. Start the game from the
+# launcher, not Steam: the launcher copies NitroxPatcher.dll into Subnautica_Data/Managed.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+DIR=nitrox/Nitrox.Launcher/bin/Release/net9.0
+[ -x "$DIR/Nitrox.Launcher" ] || { echo "run-launcher: no launcher in $DIR; run ./scripts/install-mod first" >&2; exit 2; }
+[ -n "${LMS_INGEST_TOKEN:-}" ] || echo "run-launcher: LMS_INGEST_TOKEN not set; nothing will be pushed to a booth" >&2
+
+# The server reads the config beside the launcher, the client the one in lib/net472.
+for config in "$DIR/lms-tournament.yaml" "$DIR/lib/net472/lms-tournament.yaml"; do
+  [ -f "$config" ] || echo "run-launcher: missing $config (./scripts/install-mod installs it)" >&2
+done
+
+exec "$DIR/Nitrox.Launcher" "$@"

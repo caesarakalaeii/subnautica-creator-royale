@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Clones the pinned Nitrox release into ./nitrox, applies nitrox-fork/patches and builds
+# NitroxPatcher against the local Subnautica install. Idempotent.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+TAG=1.8.1.0
+BRANCH="lms/$TAG"
+UPSTREAM=https://github.com/SubnauticaNitrox/Nitrox.git
+
+if [ ! -d nitrox/.git ]; then
+  echo "==> cloning Nitrox $TAG"
+  git clone --depth 1 --branch "$TAG" "$UPSTREAM" nitrox
+fi
+
+if ! git -C nitrox rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null; then
+  echo "==> branching $BRANCH from $TAG, applying nitrox-fork/patches"
+  git -C nitrox checkout -q -b "$BRANCH" "tags/$TAG"
+  git -C nitrox -c user.name=lms -c user.email=lms@invalid am "$PWD"/nitrox-fork/patches/*.patch
+fi
+
+git -C nitrox checkout -q "$BRANCH"
+echo "==> building NitroxPatcher (net472) against the local install"
+dotnet build nitrox/NitroxPatcher/NitroxPatcher.csproj -f net472 -c Release

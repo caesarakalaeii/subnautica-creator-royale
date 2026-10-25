@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Last Man Standing · home</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/bracket.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%235fe3f0' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff5b5b'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="bracket">
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__mark" aria-hidden="true"></span>
+        <span class="bar__title">last man standing</span>
+        <span class="bar__sub">the front door</span>
+      </div>
+    </header>
+
+    <!-- Page tabs. Relative hrefs keep navigation inside the current booth (`/b/{booth}/`); pages
+         read this booth's tokens from browser storage. -->
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html" aria-current="page">home</a>
+      <a class="tabs__tab" href="tournament.html">tournament</a>
+      <a class="tabs__tab" href="index.html">view</a>
+      <a class="tabs__tab" href="bracket.html">bracket</a>
+      <a class="tabs__tab" href="console.html">operator</a>
+      <a class="tabs__tab" href="events.html">events</a>
+    </nav>
+
+    <main class="sheet">
+      <section class="panel" aria-labelledby="make-heading">
+        <h2 class="panel__head" id="make-heading">register a server</h2>
+
+        <p class="hint">
+          A casting booth for a match on your own Nitrox server: the dashboard, the overlays and the
+          bracket, behind tokens that are yours. You need no account, because there is none.
+        </p>
+
+        <!-- Booths expire after 24 hours, stated before one is made. Expiry keeps memory bounded and
+             leaves nothing to back up or recover. -->
+        <p class="note" data-tone="warn">
+          <strong>A booth lasts 24 hours.</strong> When the time is up the booth, its match and
+          everything written into it are deleted, and the tokens stop working. There is no way to
+          extend one and no way to get one back — make another when you need another.
+        </p>
+
+        <form data-field="createForm">
+          <button type="submit" class="go" data-field="create">make me a booth</button>
+        </form>
+
+        <p class="said" data-field="said" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Shown once after a booth is made and never again: nothing is stored here, and the service
+           keeps only hashes of the three tokens. -->
+      <div data-field="made" hidden>
+        <!-- Both a duration and a clock time; the clock is drawn in the reader's own timezone. -->
+        <p class="note" data-tone="warn">
+          <span data-field="expiry" role="status">this booth expires in 24 hours</span> —
+          at <time data-field="expiresAt"></time>, after which it and everything in it are deleted.
+        </p>
+
+        <section class="panel" aria-labelledby="tokens-heading">
+          <h2 class="panel__head" id="tokens-heading">your three tokens</h2>
+
+          <p class="hint">
+            <strong>These are shown once.</strong> The booth keeps only their hashes, so nobody —
+            including whoever runs this service — can show them to you again. Copy them somewhere
+            before you leave this page: a booth is its tokens, and losing them loses the booth.
+          </p>
+
+          <label class="field">
+            <span class="field__label">
+              ingest token — your game server pushes the match with this
+            </span>
+            <input type="text" data-field="ingestToken" readonly spellcheck="false" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">
+              view token — the dashboard, the overlays and the bracket read with this
+            </span>
+            <input type="text" data-field="viewToken" readonly spellcheck="false" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">
+              operator token — attributing a kill, writing the bracket and running verbs
+            </span>
+            <input type="text" data-field="operatorToken" readonly spellcheck="false" />
+          </label>
+
+          <p class="hint">
+            Three rather than one, deliberately: watching does not confer writing. The view token is
+            the one that goes in an overlay URL and into a screen share, so it is the one that must
+            not be able to reset your match.
+          </p>
+        </section>
+
+        <section class="panel" aria-labelledby="server-heading">
+          <h2 class="panel__head" id="server-heading">point your server at it</h2>
+
+          <p class="hint">
+            Paste this into <code>lms-tournament.yaml</code> beside your server executable, and set
+            the ingest token in the server's own environment as
+            <code>LMS_INGEST_TOKEN</code>. There is no <code>token:</code> field in the config file
+            and writing one is an error — the file is the one you hand to your players.
+          </p>
+
+          <label class="field">
+            <span class="field__label">the telemetry block</span>
+            <textarea rows="6" data-field="telemetry" readonly spellcheck="false"></textarea>
+          </label>
+        </section>
+
+        <section class="panel" aria-labelledby="watch-heading">
+          <h2 class="panel__head" id="watch-heading">watch it</h2>
+
+          <p class="hint">
+            The dashboard link carries the view token so it opens straight into your booth; the page
+            takes it out of the address bar and keeps it in that browser's own storage. Send the
+            plain address to anybody who should paste the token themselves.
+          </p>
+
+          <p class="said">
+            <a data-field="dashboardLink" href="#" rel="noreferrer">open the dashboard</a>
+          </p>
+
+          <label class="field">
+            <span class="field__label">the dashboard, without the token in it</span>
+            <input type="text" data-field="dashboard" readonly spellcheck="false" />
+          </label>
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="obs-heading">
+        <h2 class="panel__head" id="obs-heading">the OBS sources</h2>
+
+        <p class="hint">
+          Each is a <b>browser source</b> in OBS: add one, paste the address, size it to the pixels
+          beside its name. Every address says <code>YOUR_VIEW_TOKEN</code> — this page is shown
+          around and read out loud, so it never carries the token itself; paste the booth's view
+          token in its place.
+        </p>
+
+        <!-- Filled by home-page.js from the overlay registry, so new panels appear automatically. -->
+        <ul class="sources" data-field="obsList"></ul>
+
+        <p class="hint">
+          <a href="overlay.html">overlay.html</a> with no <code>panel</code> shows the same
+          addresses as a card, with the token already in on a machine where the dashboard is set
+          up — which is also what a misconfigured source displays, so an operator finds it in the
+          OBS preview rather than a blank layer.
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="pages-heading">
+        <h2 class="panel__head" id="pages-heading">every page</h2>
+
+        <p class="hint">
+          Nothing is hidden: the strip at the top of each page links them all, and a page that
+          takes a token says which one on its own lock.
+        </p>
+
+        <ul class="directory">
+          <li>
+            <a href="tournament.html">tournament</a> — the schedule in the reader's own time zone and
+            the bracket as far as it is decided. The page to send viewers and creators: it takes
+            <b>no token</b> once the bracket is published.
+          </li>
+          <li>
+            <a href="index.html">view</a> — the dashboard: the match, the map and the feed, and
+            this service's front page at <code>/</code>. Locked behind the booth's
+            <b>view token</b>.
+          </li>
+          <li>
+            <a href="bracket.html">bracket</a> — standings, pairings and the computed final.
+            The same <b>view token</b>.
+          </li>
+          <li>
+            <a href="console.html">operator</a> — the verbs, who is here and the roster. Locked
+            behind the <b>operator token</b>, because watching must not confer writing.
+          </li>
+          <li>
+            <a href="events.html">events</a> — the archive: every line the booth's window still
+            holds. The same <b>view token</b>.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <script type="module" src="/home-page.js"></script>
+  </body>
+</html>

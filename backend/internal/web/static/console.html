@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Last Man Standing · console</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/console.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%23ffb454' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ffb454'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="console">
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="bar">
+      <div class="bar__brand">
+        <span class="bar__mark" aria-hidden="true"></span>
+        <span class="bar__title">last man standing</span>
+        <span class="bar__sub">operator console</span>
+      </div>
+
+      <span class="op" data-field="opName" hidden></span>
+
+      <div class="link" data-field="link" role="status" aria-live="polite">
+        <span class="link__dot" aria-hidden="true"></span>
+        <span class="link__text">starting</span>
+      </div>
+    </header>
+
+    <!-- Page tabs. Relative hrefs keep navigation inside the current booth (`/b/{booth}/`). -->
+    <nav class="tabs" aria-label="the booth's pages">
+      <a class="tabs__tab" href="home.html">home</a>
+      <a class="tabs__tab" href="tournament.html">tournament</a>
+      <a class="tabs__tab" href="index.html">view</a>
+      <a class="tabs__tab" href="bracket.html">bracket</a>
+      <a class="tabs__tab" href="console.html" aria-current="page">operator</a>
+      <a class="tabs__tab" href="events.html">events</a>
+    </nav>
+
+    <!-- Shown until an operator token is pasted in; the view token grants nothing on this page. -->
+    <section class="lock" data-field="lock">
+      <h1 class="lock__head">operator token</h1>
+
+      <p class="lock__hint">
+        This page runs the tournament. It is kept off the caster's dashboard on purpose — the
+        dashboard is the page in front of the cameras, and this one has
+        <code>podclear all</code> on it.
+      </p>
+
+      <label class="lock__field">
+        <span class="lock__label">paste it</span>
+        <input type="password" data-field="token" autocomplete="off" spellcheck="false" />
+      </label>
+
+      <label class="lock__field">
+        <span class="lock__label">who you are, for the record</span>
+        <input type="text" data-field="by" spellcheck="false" placeholder="your name" />
+      </label>
+
+      <p class="lock__hint">
+        Both are kept in this browser's own storage and never in the address bar — a token in the
+        bar is a token in every screen share.
+      </p>
+    </section>
+
+    <div data-field="operator" hidden>
+      <!-- Notices the operator must see first (unreachable database, pending reconcile); hidden
+           while empty. -->
+      <div class="notes">
+        <p class="note" data-field="records" role="status" hidden></p>
+        <p class="note" data-field="reconcile" role="status"></p>
+      </div>
+
+      <main class="grid">
+        <!-- One row per verb, grouped by the kind the mod reports (press it / about a player / type
+             it). Empty groups are not drawn. -->
+        <div class="rail" aria-labelledby="verbs-heading">
+          <h3 class="rail__title" id="verbs-heading">the verbs</h3>
+          <div data-field="verbs"></div>
+
+          <p class="empty" data-field="verbsEmpty">no game server has reported its verbs yet</p>
+
+          <p class="rail__hint">
+            A row in <em>type it</em> fires only after the words themselves are typed. That is the
+            mod's own <code>mustBeTyped</code>, honoured rather than reinvented — deleting every
+            pod in the world must never be one click.
+          </p>
+        </div>
+
+        <!-- The command queue, the widest column; the mod's replies are shown verbatim. -->
+        <div class="stream">
+          <header class="stream__head">
+            <span class="stream__title">what has been asked for</span>
+            <span class="stream__said" data-field="said" role="status" aria-live="polite"></span>
+          </header>
+
+          <ol class="queue" data-field="queue"></ol>
+
+          <p class="empty" data-field="queueEmpty">nothing has been asked for yet</p>
+        </div>
+
+        <aside class="state">
+          <!-- One follow control per camera (ghost). An empty target releases that camera. -->
+          <section aria-labelledby="follows-heading">
+            <h3 class="state__head" id="follows-heading">the cameras</h3>
+            <div class="cams" data-field="follows"></div>
+            <p class="empty" data-field="followsEmpty">no camera is connected</p>
+            <p class="state__hint">
+              A name beside a camera points it at one contestant; left empty, it lets that camera
+              go while the others hold their shot. <code>follow</code> in the rail still points
+              every camera at once.
+            </p>
+          </section>
+
+          <section aria-labelledby="roster-heading">
+            <h3 class="state__head" id="roster-heading">who is here</h3>
+            <table class="here">
+              <thead>
+                <tr>
+                  <th scope="col">player</th>
+                  <th scope="col">the game says</th>
+                  <th scope="col">the booth intends</th>
+                </tr>
+              </thead>
+              <tbody data-field="roster"></tbody>
+            </table>
+            <p class="empty" data-field="rosterEmpty">nobody is connected</p>
+          </section>
+        </aside>
+      </main>
+
+      <!-- Setup-time editing, in tabs below the live controls. -->
+      <section class="drawer" aria-label="the tournament's records">
+        <div class="drawer__bar" role="tablist">
+          <button
+            class="drawer__tab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-tab="rules"
+          >
+            the rules
+          </button>
+          <button
+            class="drawer__tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-tab="people"
+          >
+            the people
+          </button>
+          <button
+            class="drawer__tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-tab="exceptions"
+          >
+            exceptions
+          </button>
+        </div>
+
+        <div class="drawer__panel" data-tab-panel="rules" role="tabpanel">
+          <p class="note" data-field="rulesState" role="status"></p>
+
+          <!-- Config loader problems, verbatim, by field path. -->
+          <ul class="problems" data-field="rulesProblems" hidden></ul>
+
+          <form data-field="rulesForm">
+            <label class="editorField">
+              <span class="lock__label">lms-tournament.yaml</span>
+              <textarea rows="12" data-field="rulesYaml" spellcheck="false"></textarea>
+            </label>
+
+            <div class="drawer__row">
+              <label class="lock__field lock__field--note">
+                <span class="lock__label">what you are changing</span>
+                <input type="text" data-field="rulesNote" spellcheck="false" />
+              </label>
+
+              <button type="submit" class="go" data-field="writeRules">send it to the game server</button>
+              <button type="button" class="go go--quiet" data-field="revertRules">take mine back</button>
+            </div>
+
+            <p class="state__hint">
+              The game server decides. It loads this with the same loader the file gets, writes it
+              to its own disk, and takes it up <strong>in the lobby only</strong> — the wall must
+              not move under people standing next to it. A config sent mid-match is written and
+              waits, which is not the same as refused. The clients are told as soon as it is
+              adopted.
+            </p>
+          </form>
+
+          <ol class="queue revisions" data-field="revisions"></ol>
+          <p class="empty" data-field="revisionsEmpty">nothing has been written from here yet</p>
+        </div>
+
+        <div class="drawer__panel" data-tab-panel="people" role="tabpanel" hidden>
+          <ul class="people" data-field="people"></ul>
+          <p class="empty" data-field="peopleEmpty">nobody has been written down yet</p>
+
+          <form data-field="peopleForm">
+            <!-- Each row keeps its id, so editing a name renames that person (e.g. to bind an unknown
+                 joiner) rather than adding a new one. -->
+            <label class="editorField">
+              <span class="lock__label">the roster, as the console reads it</span>
+              <textarea rows="8" data-field="peopleJson" spellcheck="false"></textarea>
+            </label>
+
+            <div class="drawer__row">
+              <button type="submit" class="go" data-field="writePeople">write the roster</button>
+              <button type="button" class="go go--quiet" data-field="revertPeople">
+                take mine back
+              </button>
+            </div>
+
+            <p class="state__hint">
+              Keep each <code>id</code>. Editing a name in place corrects that person and keeps
+              them in their group; removing the id would write a second row for the same human.
+              Taking somebody off is refused until the write says how many it takes off: add
+              <code>"removing": 1</code> beside <code>"people"</code> and send it again.
+            </p>
+          </form>
+        </div>
+
+        <div class="drawer__panel" data-tab-panel="exceptions" role="tabpanel" hidden>
+          <form data-field="overrideForm">
+            <div class="drawer__row">
+              <label class="lock__field">
+                <span class="lock__label">person</span>
+                <select data-field="overridePerson" required></select>
+              </label>
+
+              <label class="lock__field">
+                <span class="lock__label">role</span>
+                <select data-field="overrideRole">
+                  <option value="ghost">ghost — out of the match</option>
+                  <option value="contestant">contestant — in it</option>
+                  <option value="derived">derived — let the rule decide</option>
+                </select>
+              </label>
+
+              <label class="lock__field lock__field--note">
+                <span class="lock__label">why</span>
+                <input type="text" data-field="overrideNote" spellcheck="false" />
+              </label>
+
+              <button type="submit" class="go" data-field="writeOverride">write it</button>
+            </div>
+          </form>
+
+          <ul class="overrides" data-field="overrides"></ul>
+          <p class="empty" data-field="overridesEmpty">the rule has decided everything so far</p>
+
+          <p class="state__hint">
+            Nothing here is ever edited or deleted: <em>derived</em> hands somebody back to the
+            rule, and the argument stays in the table with timestamps.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <!-- AGPL §13 source offer: the service replaces the marker below with a link to the running
+         revision's source. In the HTML rather than added by script, so it works without JavaScript. -->
+    <footer class="colophon"><!-- source-offer --></footer>
+
+    <datalist id="known-names" data-field="knownNames"></datalist>
+
+    <script type="module" src="/console-page.js"></script>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Lms.Core.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="MSTest" Version="3.11.1" />
+    <!-- 7.x is the last Apache-2.0 line; 8.x needs a paid Xceed licence for commercial use.
+         Do not bump the major. -->
+    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Lms.Core/Lms.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets a test prove the resolver's compiled-in biome table matches the extract. -->
+    <None Include="../../docs/data/biome-names.txt" Link="biome-names.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The documented example config; a test proves it still loads. -->
+    <None Include="../../docs/config/tournament.example.yaml" Link="tournament.example.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The config players run as lms-tournament.yaml; a test proves it still loads. -->
+    <None Include="../../docs/config/tournament.playtest.yaml" Link="tournament.playtest.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <!-- MatchHost test fixture: phase centres authored by hand, no `destinations` pool. Not shipped. -->
+    <None Include="../../docs/config/tournament.test.yaml" Link="tournament.test.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Override families and every override string extracted from the game, so the resolver is
+         tested against real data. -->
+    <None Include="../../docs/data/biome-override-families.tsv" Link="biome-override-families.tsv" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/data/biome-overrides.tsv" Link="biome-overrides.tsv" CopyToOutputDirectory="PreserveNewest" />
+    <!-- What a batch pulls from an atmosphere prefab, read from the running game by lmsbiomes.
+         Same drift test as above. -->
+    <None Include="../../docs/data/biome-override-prefabs.tsv" Link="biome-override-prefabs.tsv" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The telemetry contract's golden payload. backend/internal/telemetry parses the same file,
+         so both ends are tested against one set of bytes. -->
+    <None Include="../../docs/telemetry/example.json" Link="telemetry-example.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/audit/played-match.tsv" Link="played-match.tsv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

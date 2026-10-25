@@ -1,0 +1,278 @@
+# Example tournament config: every section, with the values a real tournament starts from.
+# Install it as lms-tournament.yaml beside the server and beside the client mod (see README.md).
+#
+# Unknown fields are errors. Durations are written as 800ms, 90s, 5m, 1h or 00:05:00.
+
+match:
+  # Length of one cycle. One zone phase fires per cycle.
+  cycleLength: 5m
+  # How long before each phase the warning starts. Shorter than the cycle and the opening.
+  warningLead: 1m
+
+  # Length of the first window, before phase 1 fires. Default: cycleLength.
+  # openingLength: 10m
+
+  # How long the wall stays stopped after a match is won before MatchEnded is recorded.
+  # Default 10s; 0s records it immediately.
+  victoryWindow: 10s
+
+# The shrinking zone. A true sphere: depth counts exactly as much as horizontal distance.
+zone:
+  # How often a player outside the wall takes damage. Default 2s.
+  damageInterval: 2s
+
+  # Metres outside the wall at which the screen effect is at full strength. Visual only. Default 150.
+  fullExposureAt: 150
+
+  # Colours of the current wall and of the sphere it is closing to; the minimap rings use the same
+  # pair. "#RRGGBB" or "#RRGGBBAA", quoted (unquoted, YAML reads # as a comment). Cosmetic.
+  colours:
+    now: "#FFD65C"
+    next: "#7CFF5C1A"
+
+  # The sphere the match starts inside. centre is [x, y, z] in metres; y is height, so below the
+  # surface is negative. The seabed at the world origin is about 24 m down, so wide spheres want
+  # shallow centres. ./scripts/check-zone measures how much water a sphere really holds.
+  opening:
+    centre: [100, -20, -350]
+    radius: 1800
+    # Health per tick outside the opening sphere.
+    damagePerTick: 1
+
+  # Places a match may finish. One is drawn per group, and the phase centres are derived from it,
+  # so phases below carry no centre. Each place must lie within opening.radius minus the last
+  # phase's radius of the opening centre (1680 m here); ./scripts/check-zone checks the water.
+  destinations:
+    - name: Jellyshroom Cave
+      centre: [-632, -262, -93]
+    - name: Lost River, near the skull
+      centre: [-731, -761, -272]
+    - name: Lava Zone, inside the volcano
+      centre: [-162, -1218, 60]
+    - name: Lava Zone, outside the containment
+      centre: [208, -1450, -240]
+    - name: The Ghost Tree
+      centre: [-944, -908, 448]
+    - name: Inside the big mushroom tree
+      centre: [-864, -156, 597]
+    - name: Crash Zone
+      centre: [1092, -91, 296]
+    - name: Floating Islands
+      centre: [-111, -232, 999]
+    - name: Big Floating Island, in the pond
+      centre: [-708, -4, -1072]
+
+  # Seeds the destination draw. Change it per event and keep a record; each match's audit log
+  # carries it beside the drawn place.
+  destinationSeed: 4071
+
+  # drawn (default): shuffled with the seed, no repeats until the pool is used up.
+  # listed: group N plays entry N; groups past the end replay the last entry. Refuses a seed.
+  # destinationOrder: drawn
+
+  # Widest first, one per cycle. Each radius is smaller and each damagePerTick larger than the one
+  # before; shrinkFor (how long the wall takes to close) must fit inside cycleLength. Without
+  # destinations, every phase needs its own centre: [x, y, z].
+  #
+  # The speed a player at the wall feels is the shrink plus the centre's walk:
+  #   (previous radius - radius) * (1 + D / reach) / shrinkFor
+  # where reach = opening.radius - last radius and D is the drawn place's distance from the
+  # opening centre. Fins swim about 4 m/s and a Seaglide about 11. These close at under 4 m/s.
+  phases:
+    - radius: 1200
+      shrinkFor: 5m
+      damagePerTick: 3
+
+    - radius: 620
+      shrinkFor: 5m
+      damagePerTick: 8
+
+    # The final arena. With a pool it lands on the drawn place, so it can be very deep.
+    - radius: 120
+      shrinkFor: 5m
+      damagePerTick: 20
+
+# The stasis rifle's field: anyone can swim in, nobody can swim out until it expires. Written onto
+# the game's own field. Omit the section for the game's own rifle (these values).
+ring:
+  # Radius in metres and lifetime of a tapped shot (min) and a full charge (max).
+  minRadius: 1
+  maxRadius: 10
+  minLifetime: 4s
+  maxLifetime: 20s
+
+  # How far inside the ring, in metres, a player is put when it has to move them. Less than maxRadius.
+  placementMargin: 1
+
+  # Battery cost of a full-charge ring (a battery holds 100); a partial charge costs a share.
+  # Must be above zero. Creative saves spend no energy at all.
+  energyCost: 5
+
+# Prawn suit arms against players. Read by the server; the attacker's client only reports the
+# swing. Off unless hurtsPlayers is true.
+prawn:
+  # The switch. Default false.
+  hurtsPlayers: false
+
+  # Health per claw hit (a player has 100; the game's own claw does 50). 0 disables the claw.
+  clawDamage: 20
+
+  # Health per drill tick. 0 disables the drill.
+  drillDamage: 0
+
+  # Furthest apart, in metres, a hit is believed. Must be above 6.5 (the game's claw reach).
+  reach: 9
+
+  # Shortest time between two believed hits from the same prawn. Must be above zero.
+  minInterval: 800ms
+
+# Knife and heat blade against players, judged by the server like the prawn's arms. Off unless
+# hurtsPlayers is true. While a tournament is loaded, Nitrox's own PvP damage path is blocked.
+blade:
+  # The switch. Default false.
+  hurtsPlayers: false
+
+  # Health per knife hit. 0 disables the knife.
+  knifeDamage: 12
+
+  # Health per heat blade hit, independent of the knife. 0 disables it.
+  heatBladeDamage: 20
+
+  # Furthest apart, in metres, a hit is believed. Must be above 4.8: the game's 2 m reach plus the
+  # distance from a swimmer's origin to their collider.
+  reach: 6
+
+  # Shortest time between two believed hits from the same player. The game itself allows one swing
+  # per 0.5 s; the margin absorbs network jitter. Must be above zero.
+  minInterval: 250ms
+
+  # Damage multiplier per piece of the victim's equipment, by game item name, each in (0, 1].
+  # Default: ReinforcedDiveSuit 0.5.
+  resistances:
+    ReinforcedDiveSuit: 0.5
+
+# What an eliminated player sees. Read by the client.
+spectator:
+  # How long the game's death view runs before the free camera takes over. Default 5s.
+  deathCam: 5s
+
+  # true: fly a free camera after the death view. false: the game's own death and respawn run
+  # unchanged. Default true.
+  spectate: true
+
+  # Free camera speed in metres per second. Keys 1-5 still change it in game. Default 8.
+  flySpeed: 8
+
+# What ghosts (casters) see. Read by the client. Omit for these defaults.
+caster:
+  # Draw every contestant's name, health and air through terrain. Does not affect lms follow.
+  nameplates: true
+
+  # lms follow: the camera cuts to this distance and height (metres) from the target, keeping the
+  # caster's bearing. followHeight may be negative to film from below.
+  followDistance: 12
+  followHeight: 4
+
+  # After the cut the caster can orbit and dolly freely between these two distances.
+  followClosest: 3
+  followFurthest: 40
+
+# Escape pod placement. Read by the server. Omit for stock Nitrox (one shared pod).
+# Applies to players joining this world for the first time; lms podspawn re-seats everybody.
+spawn:
+  # One pod per player, each with its own fabricator. Default false.
+  ownPod: true
+
+  # Wanted distance between pods in metres. A target, never a veto. Default 0.
+  minSeparation: 400
+
+  # How many pods the layout is planned for. Caps nobody. Default 5.
+  groupSize: 5
+
+  # Put the pods on a circle of this radius (metres) around the world origin, the first due north,
+  # the rest clockwise, 2*r*sin(pi/groupSize) apart. 0 (default) picks from the game's start points.
+  # The circle ignores terrain: run ./scripts/check-zone after changing it.
+  circleRadius: 600
+
+# Live push to the casting booth. Read by the server. Omit to push nowhere. The push token comes
+# from the LMS_INGEST_TOKEN environment variable, never from this file.
+#
+# telemetry:
+#   # The booth's ingest URL, http or https.
+#   url: http://booth.local:8080/ingest
+#   # How often the match is pushed, rounded up to the server's 0.25 s tick. Default 1s.
+#   interval: 1s
+#   # How long one push may take before it counts as failed. Default 5s.
+#   timeout: 5s
+#   # Whether the booth may run /lms commands on this server. Default true when url is set.
+#   acceptsCommands: true
+
+# Audit log sampling. Read by the server.
+audit:
+  # How often each living player's position is written, in match time. 0s turns it off. Default 5s.
+  positionInterval: 5s
+
+# Disconnects. Read by the server. A player who drops while outside the wall is charged, on
+# rejoin, the damage the wall would have done after the grace period.
+disconnect:
+  # Forgiven absence, in match time. Default 90s. 0s forgives nothing; a grace longer than a match
+  # turns the rule off. Charged only when flags.enforceDamage is true.
+  grace: 90s
+
+flags:
+  # Whether the zone (and the disconnect charge) takes health. Default false. PvP damage is
+  # switched by prawn.hurtsPlayers and blade.hurtsPlayers instead.
+  enforceDamage: false
+
+  # Whether contestants are told which destination was drawn. Default false; when off the name is
+  # never sent to them.
+  showDestination: false
+
+  # Whether a stasis ring holds players. Default true.
+  enforceContainment: true
+
+  # Whether beacons and other players' location markers are hidden from contestants (ghosts still
+  # see them). Default true.
+  hideBeacons: true
+
+# First aid kit cooldown, in match time. Read by the client. Default 0s (no cooldown).
+# medkit:
+#   cooldown: 30s
+
+# Players who are present but not in the match: no pod, no damage, not in the roster or standings.
+# Read by the server; names match case-insensitively. lms ghost <player> adds one at runtime.
+#ghosts:
+#  - YourCasterName
+#  - YourProducerName
+
+# How lms round starts a round. Read by the server and sent to clients.
+start:
+  # Delay between lms round and the match start. 0s starts at once. Default 30s.
+  hold: 30s
+
+  # Radius in metres of the stasis field meant to hold players during the hold. Not applied yet:
+  # players can move during the hold. Default 12.
+  fieldRadius: 12
+
+  # Items each inventory is cleared to, by game item name. Cleared items are destroyed. Default empty.
+  kit: []
+
+  # Blueprints withheld from the grant. Subtracts from recipes; with no recipes written, from
+  # every blueprint. Default Seamoth, Exosuit, Cyclops; [] withholds nothing.
+  lockedRecipes:
+    - Seamoth
+    - Exosuit
+    - Cyclops
+
+  # Blueprints a round grants on top of the game's own starting set. [all] grants every blueprint;
+  # [] (or omitting both lists) grants nothing extra, so the rest must be scanned. Names are the
+  # game's TechType names; unknown names are logged and skipped.
+  recipes:
+    - all
+
+  # Starting health, food and water, each a percentage from 1 to 100. Accepted and validated but
+  # not applied yet: a round currently resets everyone to the game's new-player values.
+  #vitals:
+  #  health: 100
+  #  food: 100
+  #  water: 100

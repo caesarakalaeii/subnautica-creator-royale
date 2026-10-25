@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Per-developer paths: NitroxDir. Gitignored; see local.props.example. -->
+  <Import Project="$(MSBuildThisFileDirectory)../../local.props" Condition="Exists('$(MSBuildThisFileDirectory)../../local.props')" />
+
+  <PropertyGroup>
+    <!-- Loaded into the net9.0 Nitrox server. Not in Lms.slnx: it needs the fork to build. -->
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Lms.Server</AssemblyName>
+    <RootNamespace>Lms.Server</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Loaded by name with no deps.json, so YamlDotNet must sit beside it as a file. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NitroxDir Condition="'$(NitroxDir)' == ''">$(MSBuildThisFileDirectory)../../nitrox/</NitroxDir>
+    <!-- The server's own dependencies, which hold the Nitrox assemblies referenced below. -->
+    <NitroxServerDir>$(NitroxDir)Nitrox.Server.Subnautica/bin/$(Configuration)/net9.0/</NitroxServerDir>
+    <NitroxServerLibDir>$(NitroxServerDir)lib/</NitroxServerLibDir>
+    <!-- The copy that runs: the server exe sits in the launcher's output and resolves assemblies
+         from the lib/ beside it. -->
+    <NitroxLauncherLibDir Condition="'$(NitroxLauncherLibDir)' == ''">$(NitroxDir)Nitrox.Launcher/bin/$(Configuration)/net9.0/lib/</NitroxLauncherLibDir>
+  </PropertyGroup>
+
+  <Target Name="CheckForkIsPresent" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(NitroxServerLibDir)Nitrox.Model.Subnautica.dll')"
+           Text="No Nitrox fork server build at '$(NitroxServerLibDir)'. Run ./scripts/check-game (or build nitrox/Nitrox.Server.Subnautica) first, or set NitroxDir in local.props." />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="../Lms.Core/Lms.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Private=false: the server already loads them. Nitrox.Model for the logger,
+       Nitrox.Model.Subnautica for ILmsTournamentHost, the one type the fork and this assembly share. -->
+  <ItemGroup>
+    <Reference Include="Nitrox.Model">
+      <HintPath>$(NitroxServerLibDir)Nitrox.Model.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Nitrox.Model.Subnautica">
+      <HintPath>$(NitroxServerLibDir)Nitrox.Model.Subnautica.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Serilog">
+      <HintPath>$(NitroxServerLibDir)Serilog.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Deploy beside the server's build output and the launcher's copy, which is the one it starts.
+       Core and YamlDotNet ship too: the server parses the zone. -->
+  <Target Name="DeployNextToNitrox" AfterTargets="Build">
+    <ItemGroup>
+      <_LmsServerFiles Include="$(TargetPath);$(TargetDir)Lms.Core.dll;$(TargetDir)YamlDotNet.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_LmsServerFiles)" DestinationFolder="$(NitroxServerLibDir)"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxServerLibDir)')" />
+    <Copy SourceFiles="@(_LmsServerFiles)" DestinationFolder="$(NitroxLauncherLibDir)"
+          SkipUnchangedFiles="true" Condition="Exists('$(NitroxLauncherLibDir)')" />
+    <Message Importance="high" Condition="Exists('$(NitroxLauncherLibDir)')"
+             Text="Installed Lms.Server.dll and Lms.Core.dll into $(NitroxLauncherLibDir)" />
+    <Warning Condition="!Exists('$(NitroxLauncherLibDir)')"
+             Text="The launcher has not been built, so the tournament is not installed where the launcher's server loads it. Run ./scripts/install-mod." />
+  </Target>
+
+</Project>
